@@ -1,0 +1,118 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <title>E-Challan Operations</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+  <link rel="stylesheet" href="../css/style.css">
+</head>
+<body class="auth-body">
+  <div class="container py-4">
+    <h2 class="fw-bold mb-4 gradient-text">Smart E-Challan System</h2>
+    <a href="admin.html" class="btn btn-outline-danger mb-4">&larr; Return to Admin Command</a>
+    <div class="row">
+      <div class="col-md-4 mb-4">
+        <div class="card p-4 shadow-lg glass-card border-danger border-opacity-50" style="max-width:100%">
+          <h5 class="mb-4 text-danger fw-bold">Issue New E-Challan</h5>
+          <form id="vForm">
+             <label class="text-muted small">Vehicle Registration No.</label>
+             <input type="text" id="vReg" class="form-control premium-input mb-3 text-uppercase font-monospace text-warning" placeholder="DL-12-AB-3456" required>
+             
+             <label class="text-muted small">Violation Details</label>
+             <input type="text" id="vType" class="form-control premium-input mb-3" placeholder="Overspeeding / Red Light..." required>
+             
+             <label class="text-muted small">Monetary Fine (₹)</label>
+             <input type="number" id="vFine" class="form-control premium-input mb-4 text-white" placeholder="1500" required>
+             
+             <button class="btn btn-danger glow-btn w-100 fw-bold shadow-lg">Generate & Download PDF</button>
+          </form>
+        </div>
+      </div>
+      <div class="col-md-8">
+        <div class="card p-4 shadow-lg glass-card" style="max-width:100%">
+          <h5 class="mb-4 fw-semibold">Recent Traffic Violations</h5>
+          <div class="table-responsive">
+              <table class="table table-hover table-borderless text-light align-middle">
+                 <thead>
+                    <tr class="text-muted">
+                        <th>Date & Time</th>
+                        <th>Reg Number</th>
+                        <th>Infraction</th>
+                        <th>Fine Status</th>
+                    </tr>
+                 </thead>
+                 <tbody id="vBody"></tbody>
+              </table>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <script src="https://cdn.socket.io/4.6.1/socket.io.min.js"></script>
+  <script src="../js/auth.js"></script>
+  <script>
+    async function fetchVio() {
+       const res = await authFetch('/violations');
+       if(res.ok) {
+         const data = await res.json();
+         const b = document.getElementById('vBody');
+         b.innerHTML = '';
+         data.forEach(v => {
+           let d = new Date(v.createdAt).toLocaleString([], {dateStyle:'short', timeStyle:'short'});
+           b.innerHTML += `
+             <tr>
+               <td class="text-muted small">${d}</td>
+               <td class="font-monospace text-warning fw-bold">${v.vehicleNumber}</td>
+               <td>${v.violationType}</td>
+               <td class="text-danger fw-bold">₹${v.fine}</td>
+             </tr>`;
+         });
+       }
+    }
+    fetchVio();
+
+    document.getElementById('vForm').addEventListener('submit', async (e) => {
+       e.preventDefault();
+       const payload = {
+         vehicleNumber: document.getElementById('vReg').value.toUpperCase(),
+         violationType: document.getElementById('vType').value,
+         fine: document.getElementById('vFine').value
+       };
+       
+       const token = localStorage.getItem('token');
+       const btn = e.target.querySelector('button');
+       btn.innerText = 'Generating PDF...';
+       
+       try {
+           const res = await fetch('http://localhost:5000/api/violations', {
+             method: 'POST',
+             headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+             body: JSON.stringify(payload)
+           });
+           
+           if(res.ok) {
+              const blob = await res.blob();
+              const url = window.URL.createObjectURL(blob);
+              const a = document.createElement('a');
+              a.style.display = 'none';
+              a.href = url;
+              a.download = `challan_${payload.vehicleNumber}.pdf`;
+              document.body.appendChild(a);
+              a.click();
+              window.URL.revokeObjectURL(url);
+              
+              document.getElementById('vForm').reset();
+           } else {
+               alert('PDF Generation Failed.');
+           }
+       } catch (err) {
+           console.error(err);
+       } finally {
+           btn.innerText = 'Generate & Download PDF';
+       }
+    });
+
+    const socket = io('http://localhost:5000');
+    socket.on('newViolation', () => fetchVio());
+  </script>
+</body>
+</html>

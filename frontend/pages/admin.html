@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>MargDarshak AI - Admin Space</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+  <link rel="stylesheet" href="../css/style.css">
+</head>
+<body class="auth-body">
+  <div class="container py-5">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+      <h2 class="fw-bold gradient-text">Command Center Dashboard</h2>
+      <div>
+        <span id="adminGreeting" class="me-3 fw-medium text-info"></span>
+        <button class="btn btn-outline-danger" onclick="logout()">Logout</button>
+      </div>
+    </div>
+
+    <!-- Statistics Cards -->
+    <div class="row mb-5">
+      <div class="col-md-4 mb-3">
+        <div class="card p-4 shadow-sm text-center glass-card border-primary border-opacity-25" style="border-width: 2px;">
+          <h6 class="text-muted text-uppercase fw-semibold mb-2">Total Users</h6>
+          <h2 class="mb-0 fw-bold" id="statUsers">--</h2>
+        </div>
+      </div>
+      <div class="col-md-4 mb-3">
+        <div class="card p-4 shadow-sm text-center glass-card border-danger border-opacity-25" style="border-width: 2px;">
+          <h6 class="text-muted text-uppercase fw-semibold mb-2">Total Accidents</h6>
+          <h2 class="mb-0 fw-bold text-danger" id="statAccidents">--</h2>
+        </div>
+      </div>
+      <div class="col-md-4 mb-3">
+        <div class="card p-4 shadow-sm text-center glass-card border-warning border-opacity-25" style="border-width: 2px;">
+          <h6 class="text-muted text-uppercase fw-semibold mb-2">Total Violations</h6>
+          <h2 class="mb-0 fw-bold text-warning" id="statViolations">--</h2>
+        </div>
+      </div>
+    </div>
+
+    <!-- Accident Management Table -->
+    <div class="row" id="accidentsSection">
+      <div class="col-12">
+        <div class="card p-4 shadow-lg glass-card" style="max-width: 100%;">
+          <div class="d-flex justify-content-between align-items-center mb-4">
+            <h5 class="mb-0 fw-semibold">Accident Records Management</h5>
+          </div>
+          <div class="table-responsive">
+            <table class="table table-hover table-borderless align-middle text-light">
+              <thead class="border-bottom border-secondary border-opacity-50">
+                <tr>
+                  <th scope="col" class="text-muted fw-normal">Time</th>
+                  <th scope="col" class="text-muted fw-normal">Description</th>
+                  <th scope="col" class="text-muted fw-normal">Severity</th>
+                  <th scope="col" class="text-muted fw-normal">Location</th>
+                  <th scope="col" class="text-muted fw-normal">Reported By</th>
+                  <th scope="col" class="text-muted fw-normal">Actions</th>
+                </tr>
+              </thead>
+              <tbody id="adminAccidentTable">
+                <!-- Dynamic Rows Injected via admin.js -->
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Hidden elements to preserve compatibility with the full admin.js script -->
+  <div style="display:none;">
+    <div id="statReports"></div>
+    <div id="adminMap"></div>
+  </div>
+
+  <!-- Required Scripts -->
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+  <!-- Load leaflet/socket so admin.js doesn't crash on init -->
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+  <script src="https://cdn.socket.io/4.6.1/socket.io.min.js"></script>
+  
+  <script src="../js/auth.js"></script>
+  <script src="../js/admin.js"></script>
+</body>
+</html>

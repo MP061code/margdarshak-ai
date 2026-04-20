@@ -1,0 +1,177 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>MargDarshak AI - Dashboard</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+  <link rel="stylesheet" href="../css/style.css">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    /* Dashboard Specific Overrides */
+    body { background-color: #0f172a; color: #f8fafc; font-family: 'Inter', sans-serif; overflow-x: hidden; }
+    .sidebar { min-height: 100vh; background: rgba(30,41,59,0.8); backdrop-filter: blur(10px); border-right: 1px solid rgba(255,255,255,0.08); }
+    .sidebar .nav-link { color: #cbd5e1; padding: 1rem 1.5rem; transition: 0.3s; font-weight: 500; font-size: 1.05rem; }
+    .sidebar .nav-link:hover, .sidebar .nav-link.active { background: rgba(59,130,246,0.1); color: #3b82f6; border-left: 4px solid #3b82f6; }
+    .card { background: rgba(30,41,59,0.7); border: 1px solid rgba(255,255,255,0.08); border-radius: 16px; backdrop-filter: blur(10px); }
+    .table { color: #f8fafc; margin-bottom: 0; }
+    .table thead th { border-bottom: 1px solid rgba(255,255,255,0.1); color: #94a3b8; font-weight: 500; }
+    .table-hover tbody tr { transition: all 0.2s; }
+    .table-hover tbody tr:hover { background-color: rgba(255,255,255,0.05); color: #fff;}
+    #map { height: 450px; border-radius: 12px; z-index: 1; }
+    .form-control, .form-select { background-color: rgba(15,23,42,0.6); border: 1px solid rgba(255,255,255,0.1); color: #fff; padding: 0.75rem; border-radius: 8px; }
+    .form-control:focus, .form-select:focus { background-color: rgba(15,23,42,0.8); border-color: #3b82f6; color: #fff; box-shadow: 0 0 0 0.25rem rgba(59,130,246,0.25); }
+    .modal-content { background-color: #1e293b; border: 1px solid rgba(255,255,255,0.1); border-radius: 16px; }
+    .modal-header { border-bottom: 1px solid rgba(255,255,255,0.1); }
+    .modal-footer { border-top: 1px solid rgba(255,255,255,0.1); }
+  </style>
+</head>
+<body>
+  <div class="container-fluid p-0">
+    <div class="row g-0">
+      <!-- Left Sidebar -->
+      <div class="col-md-2 sidebar d-none d-md-block">
+        <div class="p-4 mb-3 text-center">
+          <h4 class="fw-bold gradient-text">MargDarshak</h4>
+        </div>
+        <ul class="nav flex-column">
+          <li class="nav-item">
+            <a class="nav-link active" href="#"><i class="bi bi-speedometer2"></i> Dashboard</a>
+          </li>
+          <li class="nav-item">
+            <a class="nav-link" href="#" onclick="alert('Click on the live map to report a new accident location.')"><i class="bi bi-exclamation-octagon"></i> Quick Accident</a>
+          </li>
+          <li class="nav-item">
+            <a class="nav-link" href="citizen-report.html"><i class="bi bi-camera"></i> Citizen Report</a>
+          </li>
+          <li class="nav-item">
+            <a class="nav-link" href="parking.html"><i class="bi bi-p-circle"></i> Smart Parking</a>
+          </li>
+          <li class="nav-item">
+            <a class="nav-link" href="violations.html"><i class="bi bi-shield-x"></i> E-Challan</a>
+          </li>
+          <li class="nav-item">
+            <a class="nav-link" href="#map"><i class="bi bi-map"></i> Map</a>
+          </li>
+          <li class="nav-item mt-5">
+            <a class="nav-link text-danger" href="javascript:void(0)" onclick="logout()"><i class="bi bi-box-arrow-right"></i> Logout</a>
+          </li>
+        </ul>
+      </div>
+
+      <!-- Main Section -->
+      <div class="col-md-10 p-4 p-md-5 main-content">
+        <div class="d-flex justify-content-between align-items-center mb-5">
+          <div>
+            <h2 class="fw-bold mb-0">System Overview</h2>
+            <p class="text-muted mb-0">Monitor traffic conditions and report incidents instantly.</p>
+          </div>
+          <div id="userGreeting" class="fw-medium text-info"></div>
+        </div>
+
+        <div class="row mb-4">
+          <div class="col-md-6 mb-3 mb-md-0">
+             <div class="card p-4 shadow-sm text-center border-info border-opacity-25" style="border-width:2px; height: 100%">
+                 <h5 class="text-muted fw-semibold">Live AQI Index</h5>
+                 <h1 id="aqiDisplay" class="fw-bold text-info my-2">--</h1>
+                 <p id="aqiStatus" class="mb-0 fw-medium">Monitoring Air Quality...</p>
+             </div>
+          </div>
+          <div class="col-md-6">
+             <div class="card p-3 shadow-sm" style="height: 100%">
+                 <h5 class="text-muted fw-semibold text-center mb-1">Traffic Density Prediction</h5>
+                 <div style="height: 120px;">
+                    <canvas id="trafficChart" style="max-height:100%; width:100%"></canvas>
+                 </div>
+             </div>
+          </div>
+        </div>
+
+        <div class="row mb-4">
+          <div class="col-12">
+            <div class="card p-3 shadow-lg">
+              <div class="d-flex justify-content-between align-items-center mb-3">
+                 <h5 class="mb-0 fw-semibold">Live Traffic Map & Incidents</h5>
+                 <span class="badge bg-primary px-3 rounded-pill">Click map to report</span>
+              </div>
+              <div id="map"></div>
+            </div>
+          </div>
+        </div>
+
+        <div class="row mb-5">
+          <div class="col-md-8 mb-4 mb-md-0">
+            <div class="card p-4 shadow-lg h-100">
+              <h5 class="mb-4 fw-semibold">Recent Alerts</h5>
+              <div class="table-responsive">
+                <table class="table table-hover table-borderless align-middle">
+                  <thead>
+                    <tr>
+                      <th scope="col">Time</th>
+                      <th scope="col">Description</th>
+                      <th scope="col">Severity</th>
+                      <th scope="col">Location</th>
+                    </tr>
+                  </thead>
+                  <tbody id="accidentTableBody">
+                    <!-- Dynamic -->
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+          <div class="col-md-4">
+            <div class="card p-4 shadow-lg h-100 d-flex flex-column">
+              <h5 class="mb-4 fw-semibold text-center">Severity Distribution</h5>
+              <div class="flex-grow-1 d-flex align-items-center justify-content-center">
+                 <canvas id="severityChart"></canvas>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Report Accident Modal Form -->
+  <div class="modal fade" id="reportModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+      <div class="modal-content shadow-lg border-0">
+        <div class="modal-header border-bottom border-light border-opacity-10">
+          <h5 class="modal-title fw-bold">Report New Accident</h5>
+          <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+        </div>
+        <div class="modal-body p-4">
+          <form id="reportAccidentForm">
+            <input type="hidden" id="reportLat">
+            <input type="hidden" id="reportLng">
+            <div class="mb-4">
+              <label class="form-label text-muted">Accident Description</label>
+              <textarea class="form-control" id="reportDesc" rows="3" placeholder="Describe the incident (e.g. 2-car collision, blocked left lane)" required></textarea>
+            </div>
+            <div class="mb-4">
+              <label class="form-label text-muted">Severity</label>
+              <select class="form-select" id="reportSeverity" required>
+                <option value="low">Low</option>
+                <option value="medium">Medium</option>
+                <option value="high">High</option>
+              </select>
+            </div>
+            <button type="submit" class="btn btn-primary w-100 glow-btn" id="submitReportBtn">Broadcast Event</button>
+          </form>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+  <script src="https://unpkg.com/leaflet.heat/dist/leaflet-heat.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <script src="https://cdn.socket.io/4.6.1/socket.io.min.js"></script>
+  
+  <script src="../js/auth.js"></script>
+  <script src="../js/dashboard.js"></script>
+</body>
+</html>

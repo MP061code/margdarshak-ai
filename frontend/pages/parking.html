@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <title>Smart Parking Grid</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+  <link rel="stylesheet" href="../css/style.css">
+  <style>#pm{height: 480px; border-radius: 12px; z-index:1;}</style>
+</head>
+<body class="auth-body">
+  <div class="container py-4">
+    <h2 class="fw-bold mb-4 gradient-text">IoT Smart Parking Network</h2>
+    <a href="dashboard.html" class="btn btn-outline-info mb-4">&larr; Return to Dashboard</a>
+    <div class="row">
+      <div class="col-md-8 mb-4">
+        <div class="card p-3 shadow-lg glass-card" style="max-width:100%"><div id="pm"></div></div>
+      </div>
+      <div class="col-md-4">
+        <div class="card p-4 shadow-lg glass-card border-warning border-opacity-25" style="max-width:100%">
+          <h5 class="mb-4 text-warning">Override Parking State</h5>
+          <form id="pForm">
+            <label class="text-muted small">Latitude</label>
+            <input type="text" id="pLat" value="28.6139" class="form-control premium-input mb-2" required>
+            <label class="text-muted small">Longitude</label>
+            <input type="text" id="pLng" value="77.2090" class="form-control premium-input mb-3" required>
+            
+            <label class="text-muted small">Total Capacity</label>
+            <input type="number" id="pTotal" placeholder="e.g. 50" class="form-control premium-input mb-2" required>
+            
+            <label class="text-muted small">Available Free Slots</label>
+            <input type="number" id="pAvail" placeholder="e.g. 12" class="form-control premium-input mb-4" required>
+            
+            <button class="btn btn-warning w-100 fw-bold">Sync to Database</button>
+          </form>
+        </div>
+      </div>
+    </div>
+  </div>
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+  <script src="https://cdn.socket.io/4.6.1/socket.io.min.js"></script>
+  <script src="../js/auth.js"></script>
+  <script>
+    let map = L.map('pm').setView([28.6139, 77.2090], 12);
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(map);
+    let markerLayer = L.layerGroup().addTo(map);
+
+    async function loadParking() {
+      const res = await authFetch('/parking');
+      if(res.ok) {
+        const data = await res.json();
+        markerLayer.clearLayers();
+        data.forEach(p => {
+          let isFull = p.availableSlots === 0;
+          let color = isFull ? '#ef4444' : '#22c55e'; // red if full, green if free
+          let statusText = isFull ? 'FULL' : 'AVAILABLE';
+          
+          L.circleMarker([p.location.lat, p.location.lng], {fillColor: color, radius: 12, fillOpacity: 0.9, color: '#1e293b', weight: 2})
+           .addTo(markerLayer).bindPopup(`
+           <span class="text-dark fw-bold">${statusText}</span><br>
+           <span class="text-dark">Slots: ${p.availableSlots}/${p.totalSlots}</span>
+           `);
+        });
+      }
+    }
+    loadParking();
+
+    document.getElementById('pForm').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const payload = {
+        lat: parseFloat(document.getElementById('pLat').value),
+        lng: parseFloat(document.getElementById('pLng').value),
+        totalSlots: parseInt(document.getElementById('pTotal').value),
+        availableSlots: parseInt(document.getElementById('pAvail').value)
+      };
+      const res = await authFetch('/parking/update', {method: 'POST', body: JSON.stringify(payload)});
+      if(res.ok) {
+          // Toast or ignore, socket does refresh
+      }
+    });
+
+    const socket = io('http://localhost:5000');
+    socket.on('parkingUpdated', () => loadParking());
+  </script>
+</body>
+</html>
