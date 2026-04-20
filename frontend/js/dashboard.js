@@ -43,14 +43,14 @@ const severityInput = document.getElementById('reportSeverity');
 function renderTable() {
   const tbody = document.getElementById('accidentTableBody');
   tbody.innerHTML = '';
-  
+
   accidentsData.forEach(acc => {
     const tr = document.createElement('tr');
-    
+
     // Determine badge class
     let badgeClass = 'text-bg-success';
-    if(acc.severity === 'medium') badgeClass = 'text-bg-warning';
-    if(acc.severity === 'high') badgeClass = 'text-bg-danger';
+    if (acc.severity === 'medium') badgeClass = 'text-bg-warning';
+    if (acc.severity === 'high') badgeClass = 'text-bg-danger';
 
     const dateStr = new Date(acc.createdAt).toLocaleString([], { dateStyle: 'short', timeStyle: 'short' });
 
@@ -66,11 +66,11 @@ function renderTable() {
 
 function renderMarkers() {
   markersLayer.clearLayers();
-  
+
   accidentsData.forEach(acc => {
     let color = '#22c55e'; // green
-    if(acc.severity === 'medium') color = '#eab308'; // yellow
-    if(acc.severity === 'high') color = '#ef4444'; // red
+    if (acc.severity === 'medium') color = '#eab308'; // yellow
+    if (acc.severity === 'high') color = '#ef4444'; // red
 
     // Simple circle markers
     L.circleMarker([acc.location.lat, acc.location.lng], {
@@ -89,7 +89,7 @@ function processHeatmap() {
   if (heatLayer) {
     map.removeLayer(heatLayer);
   }
-  
+
   // Prepare heat points
   const heatPoints = accidentsData.map(acc => {
     let intensity = 0.3; // Default for low
@@ -103,7 +103,7 @@ function processHeatmap() {
     radius: 30,
     blur: 20,
     maxZoom: 14,
-    gradient: {0.4: 'blue', 0.6: 'cyan', 0.8: 'yellow', 1.0: 'red'}
+    gradient: { 0.4: 'blue', 0.6: 'cyan', 0.8: 'yellow', 1.0: 'red' }
   }).addTo(map);
 }
 
@@ -156,7 +156,7 @@ async function fetchAccidents() {
     if (res.ok) {
       accidentsData = await res.json();
       updateUI();
-      
+
       // Auto-recenter to the most recent accident
       if (accidentsData.length > 0) {
         map.flyTo([accidentsData[0].location.lat, accidentsData[0].location.lng], 12, { duration: 1 });
@@ -204,16 +204,16 @@ document.getElementById('reportAccidentForm').addEventListener('submit', async (
 // ------------------------------------------------
 // MAP CLICK TO REPORT
 // ------------------------------------------------
-map.on('click', function(e) {
+map.on('click', function (e) {
   const { lat, lng } = e.latlng;
-  
+
   // Set hidden inputs
   latInput.value = lat;
   lngInput.value = lng;
   // Reset fields
   descInput.value = '';
   severityInput.value = 'low';
-  
+
   // Show Modal
   reportModal.show();
 });
@@ -221,12 +221,12 @@ map.on('click', function(e) {
 // ------------------------------------------------
 // REAL TIME UPDATE (SOCKET.IO)
 // ------------------------------------------------
-const socket = io('http://localhost:5000'); 
+const socket = io('https://margdarshak-ai-4rdt.onrender.com');
 
 socket.on('newAccident', (newAcc) => {
   // Prepend to array
   accidentsData.unshift(newAcc);
-  
+
   // Triggers updates for map, table, chart
   updateUI();
 });
@@ -245,15 +245,15 @@ async function initSmartFeatures() {
       labels: ['Morning', 'Afternoon', 'Evening', 'Night'],
       datasets: [{ label: 'Traffic Density (%)', data: [85, 45, 90, 20], borderColor: '#3b82f6', fill: true, backgroundColor: 'rgba(59,130,246,0.2)', tension: 0.4 }]
     },
-    options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false} }, scales: { y: { display: false }, x: { display:false } } }
+    options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: { y: { display: false }, x: { display: false } } }
   });
 
   try {
     const res = await fetch('https://api.openweathermap.org/data/2.5/air_pollution?lat=28.6139&lon=77.2090&appid=8a7ac727de90ebfd25b7dca68ee91000');
     const data = await res.json();
-    let aqiMap = {1:50, 2:100, 3:150, 4:250, 5:350};
+    let aqiMap = { 1: 50, 2: 100, 3: 150, 4: 250, 5: 350 };
     let aqiValue = aqiMap[data.list[0].main.aqi] || Math.floor(Math.random() * 100 + 150);
-    
+
     document.getElementById('aqiDisplay').innerText = aqiValue;
     if (aqiValue > 200) {
       document.getElementById('aqiDisplay').classList.add('text-danger', 'fw-bold');
@@ -262,7 +262,7 @@ async function initSmartFeatures() {
     } else {
       document.getElementById('aqiStatus').innerText = "Healthy Conditions";
     }
-  } catch(e) {
+  } catch (e) {
     document.getElementById('aqiDisplay').innerText = "180";
     document.getElementById('aqiStatus').innerText = "Simulated Active";
   }

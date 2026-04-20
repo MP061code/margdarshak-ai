@@ -1,4 +1,4 @@
-const API_BASE_URL = 'http://localhost:5000/api';
+const API_BASE_URL = "https://margdarshak-ai-4rdt.onrender.com/api";
 
 // Utility: Show alerts
 function showMessage(elementId, message, isError = false) {

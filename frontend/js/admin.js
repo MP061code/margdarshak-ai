@@ -34,14 +34,14 @@ let adminMarkersLayer = L.layerGroup().addTo(adminMap);
 function renderAdminTable() {
   const tbody = document.getElementById('adminAccidentTable');
   tbody.innerHTML = '';
-  
+
   accidentsData.forEach(acc => {
     const tr = document.createElement('tr');
-    
+
     // Aesthetic badging map
     let badgeClass = 'text-bg-success';
-    if(acc.severity === 'medium') badgeClass = 'text-bg-warning';
-    if(acc.severity === 'high') badgeClass = 'text-bg-danger';
+    if (acc.severity === 'medium') badgeClass = 'text-bg-warning';
+    if (acc.severity === 'high') badgeClass = 'text-bg-danger';
 
     const dateStr = new Date(acc.createdAt).toLocaleString([], { dateStyle: 'short', timeStyle: 'short' });
     const reportedBy = acc.reportedBy || 'Unknown User';
@@ -64,11 +64,11 @@ function renderAdminTable() {
 
 function renderAdminMarkers() {
   adminMarkersLayer.clearLayers();
-  
+
   accidentsData.forEach(acc => {
     let color = '#22c55e'; // green
-    if(acc.severity === 'medium') color = '#eab308'; // yellow
-    if(acc.severity === 'high') color = '#ef4444'; // red
+    if (acc.severity === 'medium') color = '#eab308'; // yellow
+    if (acc.severity === 'high') color = '#ef4444'; // red
 
     // Render interactive marker
     L.circleMarker([acc.location.lat, acc.location.lng], {
@@ -100,16 +100,16 @@ async function fetchAdminStats() {
     const res = await authFetch('/admin/stats'); // Assumes authFetch sets Bearer TOKEN
     if (res.ok) {
       const data = await res.json();
-      
+
       const elUsers = document.getElementById('statUsers');
       if (elUsers) elUsers.innerText = data.totalUsers;
-      
+
       const elAccidents = document.getElementById('statAccidents');
       if (elAccidents) elAccidents.innerText = data.totalAccidents;
-      
+
       const elReports = document.getElementById('statReports');
       if (elReports) elReports.innerText = data.totalCitizenReports;
-      
+
       const elViolations = document.getElementById('statViolations');
       if (elViolations) elViolations.innerText = data.totalViolations;
     } else {
@@ -138,19 +138,19 @@ async function fetchAccidentsData() {
 }
 
 // Exposed to global scope for inline onclick handler
-window.deleteAccident = async function(id) {
+window.deleteAccident = async function (id) {
   if (!confirm('Warning: Are you sure you want to permanently delete this accident record?')) return;
-  
+
   try {
     const res = await authFetch(`/accidents/${id}`, { method: 'DELETE' });
     if (res.ok) {
-        // Optimistic UI Removal
-        accidentsData = accidentsData.filter(a => a._id !== id);
-        updateAdminUI();
-        fetchAdminStats(); // Refresh dynamic numbers
+      // Optimistic UI Removal
+      accidentsData = accidentsData.filter(a => a._id !== id);
+      updateAdminUI();
+      fetchAdminStats(); // Refresh dynamic numbers
     } else {
-        const errorData = await res.json();
-        alert(`Admin Deletion Error: ${errorData.message}`);
+      const errorData = await res.json();
+      alert(`Admin Deletion Error: ${errorData.message}`);
     }
   } catch (err) {
     console.error('Delete action failed:', err);
@@ -161,7 +161,7 @@ window.deleteAccident = async function(id) {
 // ------------------------------------------------
 // LIVE FEED SOCKET.IO INTEGRATION
 // ------------------------------------------------
-const socket = io('http://localhost:5000'); 
+const socket = io('https://margdarshak-ai-4rdt.onrender.com');
 
 socket.on('newAccident', (newAcc) => {
   // Intercept real-time broadcast and inject to top of local state
