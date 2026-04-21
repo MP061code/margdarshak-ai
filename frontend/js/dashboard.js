@@ -1,8 +1,11 @@
 // Protect the route
 const token = localStorage.getItem('token');
+const userRole = localStorage.getItem('role');
+
 if (!token) {
-  // Try relative path or absolute path for redirect depending on how this is served.
   window.location.href = '../login.html';
+} else if (userRole !== 'citizen') {
+  window.location.href = 'admin.html';
 }
 
 const userStr = localStorage.getItem('user');

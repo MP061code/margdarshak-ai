@@ -1,12 +1,12 @@
-// ------------------------------------------------
 // RBAC SECURITY ENFORCEMENT
-// ------------------------------------------------
 const token = localStorage.getItem('token');
 const userRole = localStorage.getItem('role');
 
 // Strict check: if no token OR not admin, eject.
-if (!token || userRole !== 'admin') {
-  window.location.href = '../login.html';
+if (!token) {
+  window.location.href = '../admin-login.html';
+} else if (userRole !== 'admin') {
+  window.location.href = 'dashboard.html';
 }
 
 const userStr = localStorage.getItem('user');

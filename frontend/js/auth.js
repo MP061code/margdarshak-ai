@@ -10,11 +10,14 @@ function showMessage(elementId, message, isError = false) {
 }
 
 // LOGIN LOGIC
-const loginForm = document.getElementById('loginForm');
-if (loginForm) {
-  loginForm.addEventListener('submit', async (e) => {
+function handleLogin(formId, expectedRole) {
+  const form = document.getElementById(formId);
+  if (!form) return;
+
+  form.addEventListener('submit', async (e) => {
     e.preventDefault();
     const btn = document.getElementById('loginBtn');
+    const originalBtnText = btn.innerText;
     btn.disabled = true;
     btn.innerText = 'Authenticating...';
 
@@ -34,6 +37,15 @@ if (loginForm) {
         throw new Error(data.message || 'Login failed');
       }
 
+      // Check role authorization
+      if (expectedRole === 'citizen' && data.role === 'admin') {
+        throw new Error('Admins must login through the Admin Portal');
+      }
+      
+      if (expectedRole === 'admin' && data.role !== 'admin') {
+        throw new Error('Only administrators can access this portal');
+      }
+
       // Store JWT token to localStorage
       localStorage.setItem('token', data.token);
       localStorage.setItem('user', JSON.stringify(data.user));
@@ -44,19 +56,22 @@ if (loginForm) {
       // Redirect based on role
       setTimeout(() => {
         if (data.role === 'admin') {
-          window.location.href = '/pages/admin.html';
+          window.location.href = 'pages/admin.html';
         } else {
-          window.location.href = '/pages/dashboard.html';
+          window.location.href = 'pages/dashboard.html';
         }
       }, 1000);
 
     } catch (error) {
       showMessage('loginAlert', error.message, true);
       btn.disabled = false;
-      btn.innerText = 'Login to System';
+      btn.innerText = originalBtnText;
     }
   });
 }
+
+handleLogin('loginForm', 'citizen');
+handleLogin('adminLoginForm', 'admin');
 
 // REGISTER LOGIC
 const registerForm = document.getElementById('registerForm');
@@ -103,7 +118,7 @@ function logout() {
   localStorage.removeItem('token');
   localStorage.removeItem('user');
   localStorage.removeItem('role');
-  window.location.href = '/login.html';
+  window.location.href = '../index.html';
 }
 
 // UTILITY: PROTECTED API FETCH
