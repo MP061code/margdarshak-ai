@@ -83,7 +83,7 @@
        btn.innerText = 'Generating PDF...';
        
        try {
-           const res = await fetch('http://localhost:5000/api/violations', {
+           const res = await fetch(`${API_BASE_URL}/violations`, {
              method: 'POST',
              headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
              body: JSON.stringify(payload)
@@ -111,8 +111,15 @@
        }
     });
 
-    const socket = io('http://localhost:5000');
+    const socket = io('https://margdarshak-ai-4rdt.onrender.com');
     socket.on('newViolation', () => fetchVio());
   </script>
+
+    <!-- Professional Footer -->
+    <footer class="footer mt-auto py-3 bg-dark text-white text-center border-top border-secondary border-opacity-25 w-100" style="position: relative; z-index: 10; margin-top: auto;">
+        <div class="container">
+            <span class="text-muted" style="font-size: 0.9rem;">&copy; 2026 | Developed by DeepQNova Pvt. Ltd.</span>
+        </div>
+    </footer>
 </body>
 </html>

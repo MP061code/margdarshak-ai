@@ -12,6 +12,10 @@ const accidentSchema = new mongoose.Schema({
     type: String,
     enum: ['low', 'medium', 'high']
   },
+  imagePath: {
+    type: String,
+    default: null
+  },
   reportedBy: {
     type: mongoose.Schema.Types.ObjectId,
     ref: 'User'

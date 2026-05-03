@@ -87,11 +87,54 @@ function renderAdminMarkers() {
   });
 }
 
+let monthlyChartInstance = null;
+
+function renderAdminAnalytics() {
+  const ctx = document.getElementById('monthlyTrendsChart');
+  if(!ctx) return;
+
+  if (monthlyChartInstance) monthlyChartInstance.destroy();
+
+  monthlyChartInstance = new Chart(ctx.getContext('2d'), {
+    type: 'bar',
+    data: {
+      labels: ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun'],
+      datasets: [
+        { label: 'Accidents', data: [12, 19, 15, 22, 14, 28], backgroundColor: 'rgba(239, 68, 68, 0.7)' },
+        { label: 'Violations', data: [30, 45, 28, 50, 42, 60], backgroundColor: 'rgba(234, 179, 8, 0.7)' }
+      ]
+    },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      scales: {
+        y: { ticks: { color: '#94a3b8' }, grid: { color: 'rgba(255,255,255,0.05)' } },
+        x: { ticks: { color: '#94a3b8' }, grid: { display: false } }
+      },
+      plugins: { legend: { labels: { color: '#f8fafc' } } }
+    }
+  });
+
+  const listEl = document.getElementById('topRiskLocations');
+  if(listEl && accidentsData.length > 0) {
+    listEl.innerHTML = '';
+    const highs = accidentsData.filter(a => a.severity === 'high').slice(0, 3);
+    highs.forEach(h => {
+      const li = document.createElement('li');
+      li.className = 'list-group-item bg-transparent text-light border-secondary border-opacity-25';
+      li.innerHTML = `<i class="bi bi-exclamation-circle text-danger me-2"></i> ${h.description} <br><small class="text-muted">${h.location.lat.toFixed(3)}, ${h.location.lng.toFixed(3)}</small>`;
+      listEl.appendChild(li);
+    });
+    if(highs.length === 0) {
+      listEl.innerHTML = '<li class="list-group-item bg-transparent text-muted border-secondary border-opacity-25">No high risk zones detected.</li>';
+    }
+  }
+}
+
 function updateAdminUI() {
   renderAdminTable();
   renderAdminMarkers();
+  renderAdminAnalytics();
 }
-
 // ------------------------------------------------
 // API CONTROLLERS
 // ------------------------------------------------
@@ -163,13 +206,90 @@ window.deleteAccident = async function (id) {
 // ------------------------------------------------
 const socket = io('https://margdarshak-ai-4rdt.onrender.com');
 
+// Utility for showing toasts
+function showRealTimeToast(message) {
+  let container = document.getElementById('toastContainer');
+  if (!container) {
+    container = document.createElement('div');
+    container.id = 'toastContainer';
+    container.className = 'toast-container position-fixed bottom-0 end-0 p-3';
+    container.style.zIndex = '1100';
+    document.body.appendChild(container);
+  }
+
+  const toastEl = document.createElement('div');
+  toastEl.className = 'toast align-items-center text-bg-danger border-0 show';
+  toastEl.setAttribute('role', 'alert');
+  toastEl.setAttribute('aria-live', 'assertive');
+  toastEl.setAttribute('aria-atomic', 'true');
+
+  toastEl.innerHTML = `
+    <div class="d-flex">
+      <div class="toast-body fw-medium">
+        ⚠️ ${message}
+      </div>
+      <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast" aria-label="Close" onclick="this.parentElement.parentElement.remove()"></button>
+    </div>
+  `;
+
+  container.appendChild(toastEl);
+  setTimeout(() => { if (toastEl.parentNode) toastEl.remove(); }, 5000);
+}
+
 socket.on('newAccident', (newAcc) => {
   // Intercept real-time broadcast and inject to top of local state
   accidentsData.unshift(newAcc);
   updateAdminUI();
   fetchAdminStats(); // Refresh stats from socket trigger
+  showRealTimeToast(`Priority Alert: ${newAcc.description}`);
 });
 
 // BootSequence
 fetchAdminStats();
 fetchAccidentsData();
+
+// ------------------------------------------------
+// EMERGENCY CORRIDOR LOGIC
+// ------------------------------------------------
+let isEmergencyMode = false;
+let emergencyRouteLayer = null;
+
+window.toggleEmergencyMode = function() {
+  const btn = document.getElementById('emergencyToggleBtn');
+  isEmergencyMode = !isEmergencyMode;
+
+  if (isEmergencyMode) {
+    btn.classList.remove('btn-outline-danger');
+    btn.classList.add('btn-danger');
+    btn.innerHTML = `<i class="bi bi-shield-fill-exclamation"></i> Emergency Corridor Active`;
+    
+    // Simulate a route line between two points near center
+    const center = adminMap.getCenter();
+    const latlngs = [
+      [center.lat - 0.05, center.lng - 0.05],
+      [center.lat, center.lng],
+      [center.lat + 0.05, center.lng + 0.05]
+    ];
+    
+    emergencyRouteLayer = L.polyline(latlngs, {
+      color: 'red',
+      weight: 6,
+      opacity: 0.8,
+      dashArray: '10, 10'
+    }).addTo(adminMap);
+
+    adminMap.fitBounds(emergencyRouteLayer.getBounds());
+    showRealTimeToast("Emergency Corridor Activated. All signals cleared.");
+  } else {
+    btn.classList.remove('btn-danger');
+    btn.classList.add('btn-outline-danger');
+    btn.innerHTML = `<i class="bi bi-exclamation-triangle-fill"></i> Activate Emergency Corridor`;
+    
+    if (emergencyRouteLayer) {
+      adminMap.removeLayer(emergencyRouteLayer);
+      emergencyRouteLayer = null;
+    }
+    showRealTimeToast("Emergency Corridor Deactivated. Normal traffic resumed.");
+  }
+};
+

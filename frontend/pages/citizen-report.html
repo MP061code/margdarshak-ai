@@ -72,7 +72,7 @@
           let mark = L.circleMarker([r.location.lat, r.location.lng], {radius: 7, fillColor: 'cyan', color: '#000', opacity: 0.8, fillOpacity: 0.8})
            .addTo(markerLayer);
           
-          let popupHTML = r.image ? `<img src="http://localhost:5000${r.image}" width="150" class="mb-2 rounded"><br>` : '';
+          let popupHTML = r.image ? `<img src="https://margdarshak-ai-4rdt.onrender.com${r.image}" width="150" class="mb-2 rounded"><br>` : '';
           mark.bindPopup(popupHTML + `<span class="text-dark">${r.description}</span>`);
         });
       }
@@ -90,7 +90,7 @@
 
       const token = localStorage.getItem('token');
       try {
-        const res = await fetch('http://localhost:5000/api/citizen/report', {
+        const res = await fetch(`${API_BASE_URL}/citizen/report`, {
           method: 'POST',
           headers: { 'Authorization': `Bearer ${token}` }, // Form Data doesn't need Content-Type JSON
           body: formData
@@ -107,8 +107,15 @@
       }
     });
 
-    const socket = io('http://localhost:5000');
+    const socket = io('https://margdarshak-ai-4rdt.onrender.com');
     socket.on('newCitizenReport', () => loadReports());
   </script>
+
+    <!-- Professional Footer -->
+    <footer class="footer mt-auto py-3 bg-dark text-white text-center border-top border-secondary border-opacity-25 w-100" style="position: relative; z-index: 10; margin-top: auto;">
+        <div class="container">
+            <span class="text-muted" style="font-size: 0.9rem;">&copy; 2026 | Developed by DeepQNova Pvt. Ltd.</span>
+        </div>
+    </footer>
 </body>
 </html>

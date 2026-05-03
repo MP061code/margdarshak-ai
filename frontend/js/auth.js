@@ -102,7 +102,7 @@ if (registerForm) {
       showMessage('registerAlert', 'Registration successful! Redirecting to login...', false);
 
       setTimeout(() => {
-        window.location.href = '/login.html';
+        window.location.href = 'login.html';
       }, 1500);
 
     } catch (error) {

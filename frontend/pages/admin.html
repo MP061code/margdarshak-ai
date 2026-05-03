@@ -5,6 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>MargDarshak AI - Admin Space</title>
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
   <link rel="stylesheet" href="../css/style.css">
 </head>
 <body class="auth-body">
@@ -19,22 +20,48 @@
 
     <!-- Statistics Cards -->
     <div class="row mb-5">
-      <div class="col-md-4 mb-3">
+      <div class="col-md-3 mb-3">
         <div class="card p-4 shadow-sm text-center glass-card border-primary border-opacity-25" style="border-width: 2px;">
           <h6 class="text-muted text-uppercase fw-semibold mb-2">Total Users</h6>
           <h2 class="mb-0 fw-bold" id="statUsers">--</h2>
         </div>
       </div>
-      <div class="col-md-4 mb-3">
+      <div class="col-md-3 mb-3">
         <div class="card p-4 shadow-sm text-center glass-card border-danger border-opacity-25" style="border-width: 2px;">
           <h6 class="text-muted text-uppercase fw-semibold mb-2">Total Accidents</h6>
           <h2 class="mb-0 fw-bold text-danger" id="statAccidents">--</h2>
         </div>
       </div>
-      <div class="col-md-4 mb-3">
+      <div class="col-md-3 mb-3">
+        <div class="card p-4 shadow-sm text-center glass-card border-info border-opacity-25" style="border-width: 2px;">
+          <h6 class="text-muted text-uppercase fw-semibold mb-2">Citizen Reports</h6>
+          <h2 class="mb-0 fw-bold text-info" id="statReports">--</h2>
+        </div>
+      </div>
+      <div class="col-md-3 mb-3">
         <div class="card p-4 shadow-sm text-center glass-card border-warning border-opacity-25" style="border-width: 2px;">
           <h6 class="text-muted text-uppercase fw-semibold mb-2">Total Violations</h6>
           <h2 class="mb-0 fw-bold text-warning" id="statViolations">--</h2>
+        </div>
+      </div>
+    </div>
+
+    <!-- Analytics Section -->
+    <div class="row mb-5">
+      <div class="col-md-8 mb-4">
+        <div class="card p-4 shadow-lg glass-card h-100">
+          <h5 class="fw-semibold mb-4">Monthly Trends</h5>
+          <div style="height: 300px;">
+            <canvas id="monthlyTrendsChart"></canvas>
+          </div>
+        </div>
+      </div>
+      <div class="col-md-4 mb-4">
+        <div class="card p-4 shadow-lg glass-card h-100">
+          <h5 class="fw-semibold mb-4 text-danger"><i class="bi bi-geo-alt-fill"></i> Top Risk Locations</h5>
+          <ul class="list-group list-group-flush bg-transparent" id="topRiskLocations">
+            <li class="list-group-item bg-transparent text-light border-secondary border-opacity-25">Calculating...</li>
+          </ul>
         </div>
       </div>
     </div>
@@ -68,19 +95,38 @@
     </div>
   </div>
 
-  <!-- Hidden elements to preserve compatibility with the full admin.js script -->
-  <div style="display:none;">
-    <div id="statReports"></div>
-    <div id="adminMap"></div>
-  </div>
+    <!-- Admin Map & Emergency Controls -->
+    <div class="row mb-5">
+      <div class="col-12">
+        <div class="card p-4 shadow-lg glass-card" style="max-width: 100%;">
+          <div class="d-flex justify-content-between align-items-center mb-3">
+            <h5 class="mb-0 fw-semibold">Command Center Map</h5>
+            <div>
+              <button class="btn btn-outline-danger fw-bold" id="emergencyToggleBtn" onclick="toggleEmergencyMode()">
+                <i class="bi bi-exclamation-triangle-fill"></i> Activate Emergency Corridor
+              </button>
+            </div>
+          </div>
+          <div id="adminMap" style="height: 400px; border-radius: 12px; z-index: 1;"></div>
+        </div>
+      </div>
+    </div>
 
   <!-- Required Scripts -->
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
-  <!-- Load leaflet/socket so admin.js doesn't crash on init -->
+  <!-- Load leaflet/socket/chart so admin.js doesn't crash on init -->
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
   <script src="https://cdn.socket.io/4.6.1/socket.io.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   
   <script src="../js/auth.js"></script>
   <script src="../js/admin.js"></script>
+
+    <!-- Professional Footer -->
+    <footer class="footer mt-auto py-3 bg-dark text-white text-center border-top border-secondary border-opacity-25 w-100" style="position: relative; z-index: 10; margin-top: auto;">
+        <div class="container">
+            <span class="text-muted" style="font-size: 0.9rem;">&copy; 2026 | Developed by DeepQNova Pvt. Ltd.</span>
+        </div>
+    </footer>
 </body>
 </html>

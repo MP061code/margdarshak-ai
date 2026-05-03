@@ -141,11 +141,75 @@ function renderChart() {
   });
 }
 
+function updateCongestionIndex() {
+  const display = document.getElementById('congestionDisplay');
+  const status = document.getElementById('congestionStatus');
+  if (!display || !status) return;
+
+  let index = 30; // base index
+  accidentsData.forEach(acc => {
+    if (acc.severity === 'high') index += 10;
+    else if (acc.severity === 'medium') index += 5;
+    else index += 2;
+  });
+
+  const hour = new Date().getHours();
+  if ((hour >= 8 && hour <= 11) || (hour >= 17 && hour <= 20)) {
+    index += 20; // Peak hour
+  }
+
+  index = Math.min(100, index);
+  display.innerText = index;
+  
+  if (index > 75) {
+    display.className = 'fw-bold text-danger my-2';
+    status.innerText = 'Severe Congestion';
+    status.className = 'mb-0 fw-medium text-danger';
+  } else if (index > 50) {
+    display.className = 'fw-bold text-warning my-2';
+    status.innerText = 'Moderate Traffic';
+    status.className = 'mb-0 fw-medium text-warning';
+  } else {
+    display.className = 'fw-bold text-success my-2';
+    status.innerText = 'Smooth Flow';
+    status.className = 'mb-0 fw-medium text-success';
+  }
+}
+
+let safeRouteLayer = null;
+
+function renderSafeRoute() {
+  if (safeRouteLayer) {
+    map.removeLayer(safeRouteLayer);
+  }
+
+  // Draw a simulated safe path away from high severity accidents
+  const startPoint = [28.6139, 77.2090]; // ND center
+  const endPoint = [28.5355, 77.2641];   // Kalkaji
+
+  // Simulating a detour path
+  const latlngs = [
+    startPoint,
+    [28.5800, 77.2300],
+    [28.5500, 77.2500],
+    endPoint
+  ];
+
+  safeRouteLayer = L.polyline(latlngs, {
+    color: '#3b82f6',
+    weight: 5,
+    opacity: 0.8,
+    dashArray: '10, 10'
+  }).addTo(map).bindTooltip("AI Suggested Safe Route", {permanent: false});
+}
+
 function updateUI() {
   renderTable();
   renderMarkers();
   processHeatmap();
   renderChart();
+  updateCongestionIndex();
+  renderSafeRoute();
 }
 
 // ------------------------------------------------
@@ -226,12 +290,43 @@ map.on('click', function (e) {
 // ------------------------------------------------
 const socket = io('https://margdarshak-ai-4rdt.onrender.com');
 
+// Utility for showing toasts
+function showRealTimeToast(message) {
+  let container = document.getElementById('toastContainer');
+  if (!container) {
+    container = document.createElement('div');
+    container.id = 'toastContainer';
+    container.className = 'toast-container position-fixed bottom-0 end-0 p-3';
+    container.style.zIndex = '1100';
+    document.body.appendChild(container);
+  }
+
+  const toastEl = document.createElement('div');
+  toastEl.className = 'toast align-items-center text-bg-danger border-0 show';
+  toastEl.setAttribute('role', 'alert');
+  toastEl.setAttribute('aria-live', 'assertive');
+  toastEl.setAttribute('aria-atomic', 'true');
+
+  toastEl.innerHTML = `
+    <div class="d-flex">
+      <div class="toast-body fw-medium">
+        ⚠️ ${message}
+      </div>
+      <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast" aria-label="Close" onclick="this.parentElement.parentElement.remove()"></button>
+    </div>
+  `;
+
+  container.appendChild(toastEl);
+  setTimeout(() => { if (toastEl.parentNode) toastEl.remove(); }, 5000);
+}
+
 socket.on('newAccident', (newAcc) => {
   // Prepend to array
   accidentsData.unshift(newAcc);
 
   // Triggers updates for map, table, chart
   updateUI();
+  showRealTimeToast(`New Alert: ${newAcc.description}`);
 });
 
 // Start initialization
@@ -242,13 +337,34 @@ fetchAccidents();
 // ------------------------------------------------
 async function initSmartFeatures() {
   const trafficCtx = document.getElementById('trafficChart').getContext('2d');
+  
+  // Predict next 1-2 hours based on current time
+  const currentHour = new Date().getHours();
+  const labels = [
+    `${currentHour}:00`, 
+    `${(currentHour+1)%24}:00 (Predicted)`, 
+    `${(currentHour+2)%24}:00 (Predicted)`
+  ];
+  
+  // Simple logic: if it's approaching peak hours (8-10 or 17-19), predict higher
+  let baseDensity = 40;
+  if ((currentHour >= 7 && currentHour <= 10) || (currentHour >= 16 && currentHour <= 19)) {
+    baseDensity = 85;
+  }
+  
+  const dataPoints = [
+    baseDensity, 
+    Math.min(100, baseDensity + (Math.random() > 0.5 ? 15 : -10)), 
+    Math.min(100, baseDensity + (Math.random() > 0.5 ? 20 : -20))
+  ];
+
   new Chart(trafficCtx, {
     type: 'line',
     data: {
-      labels: ['Morning', 'Afternoon', 'Evening', 'Night'],
-      datasets: [{ label: 'Traffic Density (%)', data: [85, 45, 90, 20], borderColor: '#3b82f6', fill: true, backgroundColor: 'rgba(59,130,246,0.2)', tension: 0.4 }]
+      labels: labels,
+      datasets: [{ label: 'Traffic Density (%)', data: dataPoints, borderColor: '#3b82f6', fill: true, backgroundColor: 'rgba(59,130,246,0.2)', tension: 0.4 }]
     },
-    options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: { y: { display: false }, x: { display: false } } }
+    options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: { y: { display: false, min: 0, max: 100 }, x: { display: true, ticks: { color: '#94a3b8' } } } }
   });
 
   try {
