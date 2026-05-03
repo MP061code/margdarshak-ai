@@ -1,18 +1,47 @@
 const Violation = require('../models/Violation');
+const User = require('../models/User');
 const PDFDocument = require('pdfkit');
 
 exports.getViolations = async (req, res) => {
   try {
-    const violations = await Violation.find().sort({ createdAt: -1 });
+    const user = await User.findById(req.user);
+    if (!user) return res.status(404).json({ message: 'User not found' });
+
+    let query = {};
+    if (user.role === 'citizen') {
+      query = { assignedTo: req.user };
+    }
+
+    const violations = await Violation.find(query).sort({ createdAt: -1 });
     res.json(violations);
   } catch (error) { res.status(500).json({ error: error.message }); }
 };
 
 exports.createViolation = async (req, res) => {
   try {
-    const { vehicleNumber, violationType, fine, image } = req.body;
+    const user = await User.findById(req.user);
+    if (!user || user.role !== 'admin') {
+      return res.status(403).json({ message: 'Forbidden: Admin privilege required' });
+    }
+
+    const { vehicleNumber, violationType, fine, image, assignedToEmail } = req.body;
     
-    const newViolation = new Violation({ vehicleNumber, violationType, fine, image });
+    let assignedToId = null;
+    if (assignedToEmail) {
+      const citizen = await User.findOne({ email: assignedToEmail, role: 'citizen' });
+      if (citizen) {
+        assignedToId = citizen._id;
+      }
+    }
+
+    const newViolation = new Violation({ 
+      vehicleNumber, 
+      violationType, 
+      fine, 
+      image,
+      createdBy: req.user,
+      assignedTo: assignedToId
+    });
     await newViolation.save();
 
     const io = req.app.get('io');
@@ -28,6 +57,7 @@ exports.createViolation = async (req, res) => {
     doc.fontSize(16).fillColor('black').text(`Vehicle Number: ${vehicleNumber}`);
     doc.text(`Rule Violation: ${violationType}`);
     doc.text(`Fine Amount: Rs. ${fine}`);
+    if (assignedToEmail) doc.text(`Assigned To: ${assignedToEmail}`);
     doc.text(`Incident Time: ${new Date().toLocaleString()}`);
     if (image) doc.text(`Linked Image Evidence: ${image}`); // Mock image text link
     

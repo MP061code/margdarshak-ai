@@ -10,7 +10,7 @@
     <h2 class="fw-bold mb-4 gradient-text">Smart E-Challan System</h2>
     <a href="admin.html" class="btn btn-outline-danger mb-4">&larr; Return to Admin Command</a>
     <div class="row">
-      <div class="col-md-4 mb-4">
+      <div class="col-md-4 mb-4" id="issueChallanCol">
         <div class="card p-4 shadow-lg glass-card border-danger border-opacity-50" style="max-width:100%">
           <h5 class="mb-4 text-danger fw-bold">Issue New E-Challan</h5>
           <form id="vForm">
@@ -21,13 +21,16 @@
              <input type="text" id="vType" class="form-control premium-input mb-3" placeholder="Overspeeding / Red Light..." required>
              
              <label class="text-muted small">Monetary Fine (₹)</label>
-             <input type="number" id="vFine" class="form-control premium-input mb-4 text-white" placeholder="1500" required>
+             <input type="number" id="vFine" class="form-control premium-input mb-3 text-white" placeholder="1500" required>
+             
+             <label class="text-muted small">Assign to User (Email)</label>
+             <input type="email" id="vEmail" class="form-control premium-input mb-4 text-white" placeholder="user@example.com">
              
              <button class="btn btn-danger glow-btn w-100 fw-bold shadow-lg">Generate & Download PDF</button>
           </form>
         </div>
       </div>
-      <div class="col-md-8">
+      <div class="col-md-8" id="listChallanCol">
         <div class="card p-4 shadow-lg glass-card" style="max-width:100%">
           <h5 class="mb-4 fw-semibold">Recent Traffic Violations</h5>
           <div class="table-responsive">
@@ -50,6 +53,17 @@
   <script src="https://cdn.socket.io/4.6.1/socket.io.min.js"></script>
   <script src="../js/auth.js"></script>
   <script>
+    const currentRole = localStorage.getItem('role');
+    if (currentRole === 'citizen') {
+        document.getElementById('issueChallanCol').style.display = 'none';
+        document.getElementById('listChallanCol').className = 'col-md-12';
+        const backBtn = document.querySelector('.btn-outline-danger');
+        if (backBtn) {
+            backBtn.href = "dashboard.html";
+            backBtn.innerHTML = "&larr; Return to Dashboard";
+        }
+    }
+
     async function fetchVio() {
        const res = await authFetch('/violations');
        if(res.ok) {
@@ -70,12 +84,13 @@
     }
     fetchVio();
 
-    document.getElementById('vForm').addEventListener('submit', async (e) => {
+     document.getElementById('vForm').addEventListener('submit', async (e) => {
        e.preventDefault();
        const payload = {
          vehicleNumber: document.getElementById('vReg').value.toUpperCase(),
          violationType: document.getElementById('vType').value,
-         fine: document.getElementById('vFine').value
+         fine: document.getElementById('vFine').value,
+         assignedToEmail: document.getElementById('vEmail').value
        };
        
        const token = localStorage.getItem('token');

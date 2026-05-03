@@ -17,6 +17,8 @@ body.auth-body {
   color: var(--text-main);
   margin: 0;
   min-height: 100vh;
+  display: flex;
+  flex-direction: column;
 }
 
 .glass-card {
@@ -108,4 +110,13 @@ body.auth-body {
   background-color: rgba(34, 197, 94, 0.1);
   color: #86efac;
   border: 1px solid rgba(34, 197, 94, 0.2);
+}
+
+/* Fix visibility/contrast issues in dark mode */
+.text-muted {
+  color: var(--text-muted) !important;
+}
+
+.text-dark {
+  color: #1e293b !important;
 }
