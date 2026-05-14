@@ -26,6 +26,7 @@ L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
 }).addTo(adminMap);
 
 let accidentsData = [];
+let citizenReportsData = [];
 let adminMarkersLayer = L.layerGroup().addTo(adminMap);
 
 // ------------------------------------------------
@@ -130,10 +131,38 @@ function renderAdminAnalytics() {
   }
 }
 
+function renderAdminCitizenReports() {
+  const tbody = document.getElementById('adminCitizenReportsTable');
+  if(!tbody) return;
+  tbody.innerHTML = '';
+
+  citizenReportsData.forEach(rep => {
+    const tr = document.createElement('tr');
+    const dateStr = new Date(rep.createdAt).toLocaleString([], { dateStyle: 'short', timeStyle: 'short' });
+    const imgHtml = rep.image ? `<img src="https://margdarshak-ai-4rdt.onrender.com${rep.image}" width="60" class="rounded cursor-pointer" onclick="window.open(this.src)">` : '<small class="text-muted">None</small>';
+    const typeLabel = rep.issueType ? rep.issueType.replace('_', ' ').toUpperCase() : 'OTHER';
+    
+    let statusClass = rep.status === 'resolved' ? 'text-bg-success' : 'text-bg-warning';
+    
+    tr.innerHTML = `
+      <td class="text-muted"><small>${dateStr}</small></td>
+      <td class="fw-medium text-info">${typeLabel}</td>
+      <td>${rep.description}</td>
+      <td>${imgHtml}</td>
+      <td><span class="badge ${statusClass} px-2 py-1 rounded-pill">${rep.status.toUpperCase()}</span></td>
+      <td>
+        ${rep.status === 'pending' ? `<button class="btn btn-sm btn-success" onclick="updateReportStatus('${rep._id}', 'resolved')"><i class="bi bi-check-circle"></i> Resolve</button>` : ''}
+      </td>
+    `;
+    tbody.appendChild(tr);
+  });
+}
+
 function updateAdminUI() {
   renderAdminTable();
   renderAdminMarkers();
   renderAdminAnalytics();
+  renderAdminCitizenReports();
 }
 // ------------------------------------------------
 // API CONTROLLERS
@@ -201,6 +230,35 @@ window.deleteAccident = async function (id) {
   }
 };
 
+async function fetchCitizenReports() {
+  try {
+    const res = await authFetch('/citizen/report');
+    if (res.ok) {
+      citizenReportsData = await res.json();
+      renderAdminCitizenReports();
+    }
+  } catch (err) {
+    console.error("Citizen Reports Load Error:", err);
+  }
+}
+
+window.updateReportStatus = async function (id, status) {
+  try {
+    const res = await authFetch(`/citizen/report/${id}`, {
+      method: 'PUT',
+      body: JSON.stringify({ status })
+    });
+    if (res.ok) {
+      const updatedReport = await res.json();
+      citizenReportsData = citizenReportsData.map(r => r._id === id ? updatedReport : r);
+      renderAdminCitizenReports();
+      showRealTimeToast("Citizen Report updated successfully.");
+    }
+  } catch (err) {
+    console.error("Update report status failed", err);
+  }
+};
+
 // ------------------------------------------------
 // LIVE FEED SOCKET.IO INTEGRATION
 // ------------------------------------------------
@@ -244,9 +302,25 @@ socket.on('newAccident', (newAcc) => {
   showRealTimeToast(`Priority Alert: ${newAcc.description}`);
 });
 
+socket.on('newCitizenReport', (newRep) => {
+  citizenReportsData.unshift(newRep);
+  updateAdminUI();
+  fetchAdminStats();
+  showRealTimeToast(`New Citizen Report: ${newRep.issueType} reported.`);
+});
+
+socket.on('sosAlert', (data) => {
+  showRealTimeToast(`🚨 SOS EMERGENCY TRIGGERED by User! Immediate attention required.`);
+  // Highlight map heavily
+  L.circle([28.6139, 77.2090], { radius: 1000, color: 'red', fillOpacity: 0.5 })
+   .addTo(adminMap).bindPopup('<b>🚨 SOS LIVE LOCATION</b>').openPopup();
+  adminMap.flyTo([28.6139, 77.2090], 14, { duration: 1.0 });
+});
+
 // BootSequence
 fetchAdminStats();
 fetchAccidentsData();
+fetchCitizenReports();
 
 // ------------------------------------------------
 // EMERGENCY CORRIDOR LOGIC
@@ -290,6 +364,30 @@ window.toggleEmergencyMode = function() {
       emergencyRouteLayer = null;
     }
     showRealTimeToast("Emergency Corridor Deactivated. Normal traffic resumed.");
+  }
+};
+
+window.simulateSpeedCamera = async function() {
+  const vehicleNo = 'DL' + Math.floor(Math.random() * 90 + 10) + 'CM' + Math.floor(Math.random() * 9000 + 1000);
+  const speed = Math.floor(Math.random() * 40 + 85); // 85 to 124 km/h
+  if (confirm(`Smart Camera detected Vehicle ${vehicleNo} driving at ${speed} km/h (Limit: 60 km/h).\n\nAuto-generate E-Challan for Overspeeding?`)) {
+    try {
+      const payload = {
+        vehicleNumber: vehicleNo,
+        violationType: 'overspeeding',
+        fineAmount: 2000,
+        location: { lat: 28.6139, lng: 77.2090 },
+        assignedToEmail: 'test@example.com' // Using generic test email
+      };
+      
+      const res = await authFetch('/violations', { method: 'POST', body: JSON.stringify(payload) });
+      if(res.ok) {
+         showRealTimeToast(`E-Challan auto-issued for ${vehicleNo}.`);
+         fetchAdminStats();
+      } else {
+         alert("Failed to auto-issue challan.");
+      }
+    } catch(e) { console.error(e); }
   }
 };
 

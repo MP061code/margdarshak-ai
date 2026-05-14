@@ -51,7 +51,7 @@
       <div class="col-md-8 mb-4">
         <div class="card p-4 shadow-lg glass-card h-100">
           <h5 class="fw-semibold mb-4">Monthly Trends</h5>
-          <div style="height: 300px;">
+          <div class="chart-container">
             <canvas id="monthlyTrendsChart"></canvas>
           </div>
         </div>
@@ -93,6 +93,34 @@
         </div>
       </div>
     </div>
+
+    <!-- Citizen Reports Management Table -->
+    <div class="row mt-4" id="citizenReportsSection">
+      <div class="col-12">
+        <div class="card p-4 shadow-lg glass-card" style="max-width: 100%;">
+          <div class="d-flex justify-content-between align-items-center mb-4">
+            <h5 class="mb-0 fw-semibold text-info">Citizen Reports Management</h5>
+          </div>
+          <div class="table-responsive">
+            <table class="table table-hover table-borderless align-middle text-light">
+              <thead class="border-bottom border-secondary border-opacity-50">
+                <tr>
+                  <th scope="col" class="text-muted fw-normal">Date</th>
+                  <th scope="col" class="text-muted fw-normal">Type</th>
+                  <th scope="col" class="text-muted fw-normal">Description</th>
+                  <th scope="col" class="text-muted fw-normal">Image</th>
+                  <th scope="col" class="text-muted fw-normal">Status</th>
+                  <th scope="col" class="text-muted fw-normal">Actions</th>
+                </tr>
+              </thead>
+              <tbody id="adminCitizenReportsTable">
+                <!-- Dynamic Rows Injected via admin.js -->
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
   </div>
 
     <!-- Admin Map & Emergency Controls -->
@@ -102,12 +130,15 @@
           <div class="d-flex justify-content-between align-items-center mb-3">
             <h5 class="mb-0 fw-semibold">Command Center Map</h5>
             <div>
+              <button class="btn btn-outline-warning fw-bold me-2" onclick="simulateSpeedCamera()">
+                <i class="bi bi-camera-video-fill"></i> Simulate Speed Camera
+              </button>
               <button class="btn btn-outline-danger fw-bold" id="emergencyToggleBtn" onclick="toggleEmergencyMode()">
                 <i class="bi bi-exclamation-triangle-fill"></i> Activate Emergency Corridor
               </button>
             </div>
           </div>
-          <div id="adminMap" style="height: 400px; border-radius: 12px; z-index: 1;"></div>
+          <div id="adminMap" class="map-container"></div>
         </div>
       </div>
     </div>

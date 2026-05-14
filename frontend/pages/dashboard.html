@@ -8,26 +8,11 @@
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
   <link rel="stylesheet" href="../css/style.css">
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
-  <style>
-    /* Dashboard Specific Overrides */
-    body { background-color: #0f172a; color: #f8fafc; font-family: 'Inter', sans-serif; overflow-x: hidden; }
-    .sidebar { min-height: 100vh; background: rgba(30,41,59,0.8); backdrop-filter: blur(10px); border-right: 1px solid rgba(255,255,255,0.08); }
-    .sidebar .nav-link { color: #cbd5e1; padding: 1rem 1.5rem; transition: 0.3s; font-weight: 500; font-size: 1.05rem; }
-    .sidebar .nav-link:hover, .sidebar .nav-link.active { background: rgba(59,130,246,0.1); color: #3b82f6; border-left: 4px solid #3b82f6; }
-    .card { background: rgba(30,41,59,0.7); border: 1px solid rgba(255,255,255,0.08); border-radius: 16px; backdrop-filter: blur(10px); }
-    .table { color: #f8fafc; margin-bottom: 0; }
-    .table thead th { border-bottom: 1px solid rgba(255,255,255,0.1); color: #94a3b8; font-weight: 500; }
-    .table-hover tbody tr { transition: all 0.2s; }
-    .table-hover tbody tr:hover { background-color: rgba(255,255,255,0.05); color: #fff;}
-    #map { height: 450px; border-radius: 12px; z-index: 1; }
-    .form-control, .form-select { background-color: rgba(15,23,42,0.6); border: 1px solid rgba(255,255,255,0.1); color: #fff; padding: 0.75rem; border-radius: 8px; }
-    .form-control:focus, .form-select:focus { background-color: rgba(15,23,42,0.8); border-color: #3b82f6; color: #fff; box-shadow: 0 0 0 0.25rem rgba(59,130,246,0.25); }
-    .modal-content { background-color: #1e293b; border: 1px solid rgba(255,255,255,0.1); border-radius: 16px; }
     .modal-header { border-bottom: 1px solid rgba(255,255,255,0.1); }
     .modal-footer { border-top: 1px solid rgba(255,255,255,0.1); }
   </style>
 </head>
-<body>
+<body class="auth-body">
   <div class="container-fluid p-0">
     <div class="row g-0">
       <!-- Left Sidebar -->
@@ -54,7 +39,12 @@
           <li class="nav-item">
             <a class="nav-link" href="#map"><i class="bi bi-map"></i> Map</a>
           </li>
-          <li class="nav-item mt-5">
+          <li class="nav-item mt-4">
+            <a class="nav-link text-white bg-danger rounded text-center fw-bold shadow-sm" href="javascript:void(0)" onclick="triggerSOS()">
+              <i class="bi bi-broadcast"></i> SOS Emergency
+            </a>
+          </li>
+          <li class="nav-item mt-3">
             <a class="nav-link text-danger" href="javascript:void(0)" onclick="logout()"><i class="bi bi-box-arrow-right"></i> Logout</a>
           </li>
         </ul>
@@ -64,32 +54,46 @@
       <div class="col-md-10 p-4 p-md-5 main-content">
         <div class="d-flex justify-content-between align-items-center mb-5">
           <div>
-            <h2 class="fw-bold mb-0">System Overview</h2>
-            <p class="text-muted mb-0">Monitor traffic conditions and report incidents instantly.</p>
+            <h2 class="fw-bold mb-0" data-i18n="sysOverview">System Overview</h2>
+            <p class="text-muted mb-0" data-i18n="sysDesc">Monitor traffic conditions and report incidents instantly.</p>
           </div>
-          <div id="userGreeting" class="fw-medium text-info"></div>
+          <div class="d-flex align-items-center">
+            <select id="langSelect" class="form-select form-select-sm premium-input py-1 me-3" style="width: auto;" onchange="changeLanguage()">
+              <option value="en">English</option>
+              <option value="hi">हिंदी (Hindi)</option>
+              <option value="te">తెలుగు (Telugu)</option>
+            </select>
+            <div id="userGreeting" class="fw-medium text-info"></div>
+          </div>
         </div>
 
         <div class="row mb-4">
-          <div class="col-md-4 mb-3 mb-md-0">
-             <div class="card p-4 shadow-sm text-center border-info border-opacity-25" style="border-width:2px; height: 100%">
-                 <h5 class="text-muted fw-semibold">Live AQI Index</h5>
-                 <h1 id="aqiDisplay" class="fw-bold text-info my-2">--</h1>
-                 <p id="aqiStatus" class="mb-0 fw-medium">Monitoring Air Quality...</p>
+          <div class="col-md-3 mb-3 mb-md-0">
+             <div class="card p-3 shadow-sm text-center border-info border-opacity-25" style="border-width:2px; height: 100%">
+                 <h6 class="text-muted fw-semibold" data-i18n="aqiTitle">Live AQI Index</h6>
+                 <h2 id="aqiDisplay" class="fw-bold text-info my-2">--</h2>
+                 <p id="aqiStatus" class="mb-0 fw-medium small">Monitoring...</p>
              </div>
           </div>
-          <div class="col-md-4 mb-3 mb-md-0">
-             <div class="card p-4 shadow-sm text-center border-warning border-opacity-25" style="border-width:2px; height: 100%">
-                 <h5 class="text-muted fw-semibold">Congestion Index</h5>
-                 <h1 id="congestionDisplay" class="fw-bold text-warning my-2">--</h1>
-                 <p id="congestionStatus" class="mb-0 fw-medium">Calculating...</p>
+          <div class="col-md-3 mb-3 mb-md-0">
+             <div class="card p-3 shadow-sm text-center border-warning border-opacity-25" style="border-width:2px; height: 100%">
+                 <h6 class="text-muted fw-semibold" data-i18n="congestTitle">Congestion Index</h6>
+                 <h2 id="congestionDisplay" class="fw-bold text-warning my-2">--</h2>
+                 <p id="congestionStatus" class="mb-0 fw-medium small">Calculating...</p>
              </div>
           </div>
-          <div class="col-md-4">
-             <div class="card p-3 shadow-sm" style="height: 100%">
-                 <h5 class="text-muted fw-semibold text-center mb-1">Traffic Prediction</h5>
-                 <div style="height: 120px;">
-                    <canvas id="trafficChart" style="max-height:100%; width:100%"></canvas>
+          <div class="col-md-3 mb-3 mb-md-0">
+             <div class="card p-3 shadow-sm text-center border-danger border-opacity-25" style="border-width:2px; height: 100%">
+                 <h6 class="text-muted fw-semibold" data-i18n="weatherTitle">Weather Alerts</h6>
+                 <h2 id="weatherDisplay" class="fw-bold text-danger my-2"><i class="bi bi-cloud-lightning-rain"></i></h2>
+                 <p id="weatherStatus" class="mb-0 fw-medium small">Heavy Rain Exp.</p>
+             </div>
+          </div>
+          <div class="col-md-3">
+             <div class="card p-2 shadow-sm" style="height: 100%">
+                 <h6 class="text-muted fw-semibold text-center mb-1" data-i18n="trafficPred">Traffic Prediction</h6>
+                 <div class="chart-container" style="height: 100px;">
+                    <canvas id="trafficChart"></canvas>
                  </div>
              </div>
           </div>
@@ -102,7 +106,7 @@
                  <h5 class="mb-0 fw-semibold">Live Traffic Map & Incidents</h5>
                  <span class="badge bg-primary px-3 rounded-pill">Click map to report</span>
               </div>
-              <div id="map"></div>
+              <div id="map" class="map-container"></div>
             </div>
           </div>
         </div>
@@ -131,7 +135,7 @@
           <div class="col-md-4">
             <div class="card p-4 shadow-lg h-100 d-flex flex-column">
               <h5 class="mb-4 fw-semibold text-center">Severity Distribution</h5>
-              <div class="flex-grow-1 d-flex align-items-center justify-content-center">
+              <div class="chart-container flex-grow-1 d-flex align-items-center justify-content-center">
                  <canvas id="severityChart"></canvas>
               </div>
             </div>

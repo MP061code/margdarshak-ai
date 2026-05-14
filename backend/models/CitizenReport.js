@@ -1,6 +1,11 @@
 const mongoose = require('mongoose');
 
 const citizenReportSchema = new mongoose.Schema({
+  issueType: {
+    type: String,
+    enum: ['accident', 'pothole', 'road_damage', 'signal_failure', 'other'],
+    default: 'other'
+  },
   description: {
     type: String
   },

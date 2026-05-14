@@ -32,6 +32,10 @@ app.use(express.urlencoded({ extended: true }));
 io.on('connection', (socket) => {
   console.log('New real-time client connected:', socket.id);
 
+  socket.on('triggerSOS', (data) => {
+    io.emit('sosAlert', data);
+  });
+
   socket.on('disconnect', () => {
     console.log('Client disconnected:', socket.id);
   });

@@ -387,3 +387,43 @@ async function initSmartFeatures() {
   }
 }
 initSmartFeatures();
+
+// SOS Trigger logic
+window.triggerSOS = function() {
+  if (confirm("🚨 EMERGENCY SOS 🚨\n\nThis will instantly broadcast your live location to all nearby emergency services, traffic command centers, and ambulances.\n\nProceed to activate?")) {
+    showRealTimeToast("SOS Activated! Emergency dispatch notified. Stay safe.");
+    
+    // Simulate SOS backend broadcast
+    socket.emit('triggerSOS', { user: userRole, timestamp: new Date() });
+    
+    // Auto map re-center and visual change
+    map.flyTo([28.6139, 77.2090], 15, { duration: 1.5 });
+    document.querySelector('.bg-danger.rounded').classList.replace('bg-danger', 'bg-warning');
+    document.querySelector('.bg-warning.rounded').innerHTML = "<i class='bi bi-broadcast'></i> SOS Sent";
+  }
+};
+
+// Multi-Language Support
+const i18n = {
+  en: {
+    sysOverview: "System Overview", sysDesc: "Monitor traffic conditions and report incidents instantly.",
+    aqiTitle: "Live AQI Index", congestTitle: "Congestion Index", weatherTitle: "Weather Alerts", trafficPred: "Traffic Prediction"
+  },
+  hi: {
+    sysOverview: "प्रणाली सिंहावलोकन", sysDesc: "यातायात की स्थिति की निगरानी करें और तुरंत घटनाओं की रिपोर्ट करें।",
+    aqiTitle: "लाइव AQI सूचकांक", congestTitle: "भीड़ सूचकांक", weatherTitle: "मौसम अलर्ट", trafficPred: "यातायात भविष्यवाणी"
+  },
+  te: {
+    sysOverview: "సిస్టమ్ అవలోకనం", sysDesc: "ట్రాఫిక్ పరిస్థితులను పర్యవేక్షించండి మరియు సంఘటనలను తక్షణమే నివేదించండి.",
+    aqiTitle: "లైవ్ AQI ఇండెక్స్", congestTitle: "రద్దీ సూచిక", weatherTitle: "వాతావరణ హెచ్చరికలు", trafficPred: "ట్రాఫిక్ అంచనా"
+  }
+};
+
+window.changeLanguage = function() {
+  const lang = document.getElementById('langSelect').value;
+  const dict = i18n[lang];
+  document.querySelectorAll('[data-i18n]').forEach(el => {
+    const key = el.getAttribute('data-i18n');
+    if(dict[key]) el.innerText = dict[key];
+  });
+};

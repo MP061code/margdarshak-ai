@@ -1,14 +1,27 @@
 /* MargDarshak AI - Premium Dark UI Aesthetics */
 :root {
-  --bg-dark: #0f172a;
-  --card-bg: rgba(30, 41, 59, 0.7);
-  --primary-color: #3b82f6;
+  /* Color Palette */
+  --bg-dark: #0f172a;          /* Main Background */
+  --bg-darker: #020617;        /* Sidebar / Deep elements */
+  --card-bg: rgba(30, 41, 59, 0.7); /* Card Background with opacity */
+  --card-border: rgba(255, 255, 255, 0.08);
+
+  --primary-color: #3b82f6;    /* Bright Blue */
   --primary-hover: #2563eb;
-  --text-main: #f8fafc;
-  --text-muted: #94a3b8;
-  --accent: #0ea5e9;
+  --accent: #0ea5e9;           /* Cyan Accent */
+  
+  --danger-color: #ef4444;     /* Red */
+  --danger-hover: #dc2626;
+
+  /* Typography Colors */
+  --text-heading: #ffffff;     /* Headings */
+  --text-main: #e2e8f0;        /* Body text */
+  --text-muted: #94a3b8;       /* Muted / secondary text */
 }
 
+/* ========================================================= */
+/* BASE GLOBAL STYLES */
+/* ========================================================= */
 body.auth-body {
   font-family: 'Inter', sans-serif;
   background-color: var(--bg-dark);
@@ -21,15 +34,22 @@ body.auth-body {
   flex-direction: column;
 }
 
-.glass-card {
-  background: var(--card-bg);
-  backdrop-filter: blur(16px);
-  -webkit-backdrop-filter: blur(16px);
-  border: 1px solid rgba(255, 255, 255, 0.08);
-  border-radius: 20px;
-  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
-  width: 100%;
-  max-width: 480px;
+h1, h2, h3, h4, h5, h6, .h1, .h2, .h3, .h4, .h5, .h6 {
+  color: var(--text-heading) !important;
+  font-weight: 600;
+}
+
+p, span, div, li, td, th {
+  color: var(--text-main);
+}
+
+.text-muted {
+  color: var(--text-muted) !important;
+}
+
+.text-dark {
+  /* Override text-dark in our dark theme to be bright so it's readable */
+  color: #f8fafc !important; 
 }
 
 .gradient-text {
@@ -38,49 +58,215 @@ body.auth-body {
   -webkit-text-fill-color: transparent;
 }
 
-.premium-input {
-  background-color: rgba(15, 23, 42, 0.6) !important;
-  border: 1px solid rgba(255, 255, 255, 0.1) !important;
-  color: var(--text-main) !important;
+/* ========================================================= */
+/* CARD BASED LAYOUT */
+/* ========================================================= */
+.card, .glass-card, .dashboard-card {
+  background: var(--card-bg);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1px solid var(--card-border);
+  border-radius: 20px;
+  box-shadow: 0 10px 30px -10px rgba(0, 0, 0, 0.5);
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+
+.card:hover, .glass-card:hover, .dashboard-card:hover {
+  box-shadow: 0 15px 35px -10px rgba(0, 0, 0, 0.7);
+}
+
+/* Auth specific cards */
+.auth-body .glass-card {
+  width: 100%;
+}
+
+/* ========================================================= */
+/* SIDEBAR NAVIGATION */
+/* ========================================================= */
+.sidebar {
+  background: var(--bg-darker);
+  border-right: 1px solid var(--card-border);
+  box-shadow: 4px 0 15px rgba(0, 0, 0, 0.2);
+}
+
+.sidebar .nav-item {
+  margin-bottom: 0.5rem;
+}
+
+.sidebar .nav-link {
+  color: var(--text-muted);
+  padding: 0.9rem 1.5rem;
+  border-radius: 8px;
+  transition: all 0.3s ease;
+  font-weight: 500;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.sidebar .nav-link:hover, .sidebar .nav-link.active {
+  background: rgba(59, 130, 246, 0.15);
+  color: var(--primary-color);
+  border-left: 4px solid var(--primary-color);
+  border-radius: 0 8px 8px 0;
+}
+
+/* ========================================================= */
+/* BUTTONS (GRADIENT & SOLID) */
+/* ========================================================= */
+.btn {
+  font-weight: 600;
+  border-radius: 10px;
+  transition: all 0.3s ease;
+  padding: 0.6rem 1.2rem;
+}
+
+.btn-primary, .glow-btn {
+  background: linear-gradient(135deg, var(--primary-color), var(--accent));
+  border: none;
+  color: #fff;
+  box-shadow: 0 4px 15px rgba(59, 130, 246, 0.4);
+}
+
+.btn-primary:hover, .glow-btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 20px rgba(59, 130, 246, 0.6);
+  color: #fff;
+}
+
+.btn-danger {
+  background: linear-gradient(135deg, var(--danger-color), #f43f5e);
+  border: none;
+  color: #fff;
+  box-shadow: 0 4px 15px rgba(239, 68, 68, 0.4);
+}
+
+.btn-danger:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 20px rgba(239, 68, 68, 0.6);
+  color: #fff;
+}
+
+/* ========================================================= */
+/* INPUTS & FORMS */
+/* ========================================================= */
+.premium-input, .form-control, .form-select {
+  background-color: rgba(15, 23, 42, 0.8) !important;
+  border: 1px solid rgba(255, 255, 255, 0.15) !important;
+  color: var(--text-heading) !important;
   padding: 0.8rem 1.2rem;
   border-radius: 10px;
   transition: all 0.3s ease;
 }
 
-.premium-input:focus {
+.premium-input:focus, .form-control:focus, .form-select:focus {
   border-color: var(--primary-color) !important;
   box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.25) !important;
+  background-color: rgba(15, 23, 42, 0.95) !important;
 }
 
-.premium-input::placeholder {
+.premium-input::placeholder, .form-control::placeholder {
   color: var(--text-muted);
 }
 
 .form-label {
   font-weight: 500;
   font-size: 0.9rem;
-  color: #cbd5e1;
-  margin-bottom: 0.4rem;
+  color: var(--text-main);
+  margin-bottom: 0.5rem;
 }
 
-.glow-btn {
-  background: linear-gradient(135deg, var(--primary-color), var(--accent));
-  border: none;
-  padding: 0.8rem;
-  font-weight: 600;
-  border-radius: 10px;
-  transition: all 0.3s ease;
-  position: relative;
+/* ========================================================= */
+/* CONTAINERS (MAPS & CHARTS) */
+/* ========================================================= */
+.map-container {
+  height: 450px;
+  border-radius: 16px;
   overflow: hidden;
-  color: #fff;
+  border: 1px solid var(--card-border);
+  z-index: 1;
 }
 
-.glow-btn:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 10px 20px -10px var(--primary-color);
-  color: #fff;
+.chart-container {
+  position: relative;
+  height: 300px;
+  width: 100%;
 }
 
+/* ========================================================= */
+/* TABLES */
+/* ========================================================= */
+.table {
+  color: var(--text-main);
+}
+
+.table thead th {
+  border-bottom: 1px solid var(--card-border);
+  color: var(--text-muted);
+  font-weight: 600;
+  text-transform: uppercase;
+  font-size: 0.85rem;
+  letter-spacing: 0.5px;
+}
+
+.table-hover tbody tr {
+  transition: background-color 0.2s ease;
+}
+
+.table-hover tbody tr:hover {
+  background-color: rgba(255, 255, 255, 0.05);
+}
+
+.table td {
+  border-color: var(--card-border);
+  vertical-align: middle;
+}
+
+/* ========================================================= */
+/* ALERTS & MODALS */
+/* ========================================================= */
+.alert {
+  border-radius: 12px;
+  padding: 1rem 1.2rem;
+  font-size: 0.95rem;
+  border: none;
+  font-weight: 500;
+}
+
+.alert-danger {
+  background-color: rgba(239, 68, 68, 0.15);
+  color: #fca5a5;
+  border: 1px solid rgba(239, 68, 68, 0.3);
+}
+
+.alert-success {
+  background-color: rgba(34, 197, 94, 0.15);
+  color: #86efac;
+  border: 1px solid rgba(34, 197, 94, 0.3);
+}
+
+.modal-content {
+  background-color: var(--bg-darker);
+  border: 1px solid var(--card-border);
+  border-radius: 20px;
+  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.7);
+}
+
+.modal-header {
+  border-bottom: 1px solid var(--card-border);
+}
+
+.modal-footer {
+  border-top: 1px solid var(--card-border);
+}
+
+.btn-close-white {
+  filter: invert(1) grayscale(100%) brightness(200%);
+}
+
+/* ========================================================= */
+/* UTILITIES */
+/* ========================================================= */
 .auth-link {
   color: var(--accent);
   text-decoration: none;
@@ -93,30 +279,6 @@ body.auth-body {
   text-decoration: underline;
 }
 
-.alert {
-  border-radius: 10px;
-  padding: 0.8rem 1.2rem;
-  font-size: 0.95rem;
-  border: none;
-}
-
-.alert-danger {
-  background-color: rgba(239, 68, 68, 0.1);
-  color: #fca5a5;
-  border: 1px solid rgba(239, 68, 68, 0.2);
-}
-
-.alert-success {
-  background-color: rgba(34, 197, 94, 0.1);
-  color: #86efac;
-  border: 1px solid rgba(34, 197, 94, 0.2);
-}
-
-/* Fix visibility/contrast issues in dark mode */
-.text-muted {
-  color: var(--text-muted) !important;
-}
-
-.text-dark {
-  color: #1e293b !important;
+.main-content {
+  min-height: 100vh;
 }
