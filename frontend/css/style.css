@@ -282,3 +282,32 @@ p, span, div, li, td, th {
 .main-content {
   min-height: 100vh;
 }
+
+/* ========================================================= */
+/* MAP ANIMATIONS */
+/* ========================================================= */
+@keyframes flash {
+  0% { opacity: 1; transform: scale(1); }
+  50% { opacity: 0.5; transform: scale(1.2); }
+  100% { opacity: 1; transform: scale(1); }
+}
+
+.animated-route {
+  animation: dash 20s linear infinite;
+}
+
+@keyframes dash {
+  to {
+    stroke-dashoffset: -1000;
+  }
+}
+
+.listening-animation {
+  animation: pulse 1s infinite alternate;
+}
+
+@keyframes pulse {
+  0% { box-shadow: 0 0 5px rgba(59, 130, 246, 0.5); }
+  100% { box-shadow: 0 0 20px rgba(59, 130, 246, 1); }
+}
+

@@ -69,7 +69,34 @@ function renderAdminMarkers() {
   accidentsData.forEach(acc => {
     let color = '#22c55e'; // green
     if (acc.severity === 'medium') color = '#eab308'; // yellow
-    if (acc.severity === 'high') color = '#ef4444'; // red
+    if (acc.severity === 'high') {
+      color = '#ef4444'; // red
+      
+      // Draw an AI Risk Zone for High Severity
+      let riskPercentage = Math.floor(Math.random() * 20 + 80); // 80 - 99%
+      let dangerScore = (riskPercentage / 10).toFixed(1);
+      
+      let riskPopup = `
+        <div class="text-center">
+           <h6 class="text-danger fw-bold mb-1"><i class="bi bi-robot"></i> AI Risk Zone</h6>
+           <span class="badge bg-danger mb-2">Danger Score: ${dangerScore}/10</span>
+           <br><small class="text-muted">Accident Clusters: ${Math.floor(Math.random() * 5 + 2)}</small>
+           <br><small class="text-muted">Severity: CRITICAL</small>
+           <div class="progress mt-2" style="height: 5px;">
+              <div class="progress-bar bg-danger" style="width: ${riskPercentage}%"></div>
+           </div>
+           <small class="text-danger">${riskPercentage}% Risk Probability</small>
+        </div>
+      `;
+
+      L.circle([acc.location.lat, acc.location.lng], {
+        color: '#ef4444',
+        fillColor: '#ef4444',
+        fillOpacity: 0.2,
+        radius: 300 // 300 meters risk zone
+      }).addTo(adminMarkersLayer)
+        .bindPopup(riskPopup);
+    }
 
     // Render interactive marker
     L.circleMarker([acc.location.lat, acc.location.lng], {
@@ -327,14 +354,15 @@ fetchCitizenReports();
 // ------------------------------------------------
 let isEmergencyMode = false;
 let emergencyRouteLayer = null;
+let ambulanceMarker = null;
 
-window.toggleEmergencyMode = function() {
+window.toggleEmergencyMode = async function() {
   const btn = document.getElementById('emergencyToggleBtn');
   isEmergencyMode = !isEmergencyMode;
 
   if (isEmergencyMode) {
     btn.classList.remove('btn-outline-danger');
-    btn.classList.add('btn-danger');
+    btn.classList.add('btn-danger', 'glow-btn');
     btn.innerHTML = `<i class="bi bi-shield-fill-exclamation"></i> Emergency Corridor Active`;
     
     // Simulate a route line between two points near center
@@ -345,23 +373,48 @@ window.toggleEmergencyMode = function() {
       [center.lat + 0.05, center.lng + 0.05]
     ];
     
+    try {
+      const res = await authFetch('/admin/emergency', {
+        method: 'POST',
+        body: JSON.stringify({ routePath: latlngs })
+      });
+      if (!res.ok) throw new Error("Failed to activate on server");
+    } catch(e) { console.error(e); }
+
+    // Animated dashed line
     emergencyRouteLayer = L.polyline(latlngs, {
-      color: 'red',
-      weight: 6,
-      opacity: 0.8,
-      dashArray: '10, 10'
+      color: '#ef4444',
+      weight: 8,
+      opacity: 0.9,
+      className: 'animated-route'
     }).addTo(adminMap);
+    
+    // Flashing ambulance icon
+    const ambIcon = L.divIcon({
+      html: '<div style="font-size:24px; animation: flash 1s infinite;">🚑</div>',
+      className: '',
+      iconSize: [30, 30]
+    });
+    ambulanceMarker = L.marker(latlngs[0], { icon: ambIcon }).addTo(adminMap);
 
     adminMap.fitBounds(emergencyRouteLayer.getBounds());
-    showRealTimeToast("Emergency Corridor Activated. All signals cleared.");
+    showRealTimeToast("Emergency Corridor Activated. All signals cleared (Priority Green).");
   } else {
-    btn.classList.remove('btn-danger');
+    btn.classList.remove('btn-danger', 'glow-btn');
     btn.classList.add('btn-outline-danger');
     btn.innerHTML = `<i class="bi bi-exclamation-triangle-fill"></i> Activate Emergency Corridor`;
     
+    try {
+      await authFetch('/admin/emergency/clear', { method: 'POST' });
+    } catch(e) { console.error(e); }
+
     if (emergencyRouteLayer) {
       adminMap.removeLayer(emergencyRouteLayer);
       emergencyRouteLayer = null;
+    }
+    if (ambulanceMarker) {
+      adminMap.removeLayer(ambulanceMarker);
+      ambulanceMarker = null;
     }
     showRealTimeToast("Emergency Corridor Deactivated. Normal traffic resumed.");
   }

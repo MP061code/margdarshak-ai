@@ -26,7 +26,7 @@
               </select>
             </div>
             <div class="mb-3">
-              <label class="form-label text-muted">Problem Description <button type="button" class="btn btn-sm btn-outline-info ms-2" onclick="startVoiceRecording()"><i class="bi bi-mic"></i> Voice Input</button></label>
+              <label class="form-label text-muted">Problem Description <button type="button" id="voiceBtn" class="btn btn-sm btn-outline-info ms-2" onclick="startVoiceRecording()"><i class="bi bi-mic"></i> Voice Input</button></label>
               <textarea class="form-control premium-input" id="cDesc" rows="3" placeholder="Examples: Deep pothole on main road, Broken Traffic Light..." required></textarea>
             </div>
             <div class="mb-3">
@@ -132,6 +132,8 @@
       
       recognition.onstart = function() {
         document.getElementById('cDesc').placeholder = "Listening...";
+        const btn = document.getElementById('voiceBtn');
+        if (btn) btn.classList.add('listening-animation');
       };
       
       recognition.onresult = function(event) {
@@ -139,10 +141,17 @@
         const currentText = document.getElementById('cDesc').value;
         document.getElementById('cDesc').value = currentText ? currentText + " " + text : text;
       };
+
+      recognition.onend = function() {
+        const btn = document.getElementById('voiceBtn');
+        if (btn) btn.classList.remove('listening-animation');
+      };
       
       recognition.onerror = function(event) {
         console.error("Speech recognition error", event.error);
         alert("Microphone error. Please try again.");
+        const btn = document.getElementById('voiceBtn');
+        if (btn) btn.classList.remove('listening-animation');
       };
       
       recognition.start();

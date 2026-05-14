@@ -329,6 +329,44 @@ socket.on('newAccident', (newAcc) => {
   showRealTimeToast(`New Alert: ${newAcc.description}`);
 });
 
+let citizenEmergencyRouteLayer = null;
+
+socket.on('emergencyActivated', (eventData) => {
+  const banner = document.getElementById('emergencyBanner');
+  if (banner) banner.classList.remove('d-none', 'd-flex');
+  if (banner) banner.classList.add('d-flex');
+  
+  if (citizenEmergencyRouteLayer) map.removeLayer(citizenEmergencyRouteLayer);
+  if (eventData && eventData.routePath) {
+    citizenEmergencyRouteLayer = L.polyline(eventData.routePath, {
+      color: '#ef4444', weight: 8, opacity: 0.9, className: 'animated-route'
+    }).addTo(map).bindTooltip("Emergency Priority Route - KEEP CLEAR", {permanent: true});
+  }
+
+  // Force signal to Green Priority
+  currentSignalState = 'green';
+  signalTimer = 99; // Hold green
+  updateSignalUI();
+  const modeDisp = document.getElementById('signalModeDisplay');
+  if(modeDisp) modeDisp.innerHTML = 'Mode: <span class="text-danger fw-bold flash">EMERGENCY CLEARANCE</span>';
+});
+
+socket.on('emergencyCleared', () => {
+  const banner = document.getElementById('emergencyBanner');
+  if (banner) banner.classList.add('d-none');
+  if (banner) banner.classList.remove('d-flex');
+
+  if (citizenEmergencyRouteLayer) {
+    map.removeLayer(citizenEmergencyRouteLayer);
+    citizenEmergencyRouteLayer = null;
+  }
+  
+  // Reset signal mode
+  signalTimer = 45;
+  const modeDisp = document.getElementById('signalModeDisplay');
+  if(modeDisp) modeDisp.innerHTML = 'Mode: <span class="text-info">Dynamic Flow</span>';
+});
+
 // Start initialization
 fetchAccidents();
 
@@ -377,13 +415,81 @@ async function initSmartFeatures() {
     if (aqiValue > 200) {
       document.getElementById('aqiDisplay').classList.add('text-danger', 'fw-bold');
       document.getElementById('aqiStatus').innerText = "⚠️ WARNING: Hazardous";
-      alert("WARNING: Hazardous AQI Level detected (> 200) in operational zone.");
     } else {
       document.getElementById('aqiStatus').innerText = "Healthy Conditions";
     }
   } catch (e) {
     document.getElementById('aqiDisplay').innerText = "180";
     document.getElementById('aqiStatus').innerText = "Simulated Active";
+  }
+
+  // Weather Alerts Simulation: Rain -> high congestion warning, Fog -> accident risk alert
+  const weathers = ['Clear', 'Rain', 'Fog'];
+  const simulatedWeather = weathers[Math.floor(Math.random() * weathers.length)];
+  const wIcon = document.getElementById('weatherDisplay');
+  const wStatus = document.getElementById('weatherStatus');
+  
+  if (wIcon && wStatus) {
+    if (simulatedWeather === 'Rain') {
+      wIcon.innerHTML = '<i class="bi bi-cloud-rain-fill text-primary"></i>';
+      wStatus.innerText = "High Congestion Warning (Rain)";
+      wStatus.className = "mb-0 fw-bold small text-primary";
+    } else if (simulatedWeather === 'Fog') {
+      wIcon.innerHTML = '<i class="bi bi-cloud-haze-fill text-secondary"></i>';
+      wStatus.innerText = "Accident Risk Alert (Fog)";
+      wStatus.className = "mb-0 fw-bold small text-secondary";
+    } else {
+      wIcon.innerHTML = '<i class="bi bi-sun-fill text-warning"></i>';
+      wStatus.innerText = "Clear Skies";
+      wStatus.className = "mb-0 fw-medium small text-warning";
+    }
+  }
+
+  // SMART ACCIDENT PREDICTION
+  const aiPredContent = document.getElementById('aiPredictionContent');
+  if (aiPredContent) {
+    let riskLevel = 'Low';
+    let riskClass = 'text-success';
+    let riskText = 'Normal conditions expected. No major high-risk zones flagged at this time.';
+    
+    // Simple heuristic prediction
+    if (currentHour >= 17 && currentHour <= 21) {
+      riskLevel = 'High';
+      riskClass = 'text-danger';
+      riskText = `Based on historical patterns, <b>Outer Ring Road</b> has a 78% probability of severe congestion and accidents between ${currentHour}:00 and 21:00.`;
+    } else if (simulatedWeather !== 'Clear') {
+      riskLevel = 'Medium';
+      riskClass = 'text-warning';
+      riskText = `Weather conditions (${simulatedWeather}) are reducing visibility. <b>Highway Junctions</b> are flagged as medium-risk zones.`;
+    }
+    
+    aiPredContent.innerHTML = `
+      <div class="d-flex align-items-center mb-2">
+        <span class="spinner-grow spinner-grow-sm ${riskClass} me-2" role="status"></span>
+        <span class="fw-bold ${riskClass}">${riskLevel} Risk: ${currentHour}:00 - ${(currentHour+3)%24}:00</span>
+      </div>
+      <p class="text-muted small mb-0">${riskText}</p>
+    `;
+  }
+
+  // SMART ROUTE RECOMMENDATION
+  const routeContent = document.getElementById('smartRouteContent');
+  if (routeContent) {
+    let avoidZone = 'Main Junction';
+    let recRoute = 'Alternative Highway 4';
+    
+    if (simulatedWeather === 'Rain') {
+      avoidZone = 'Underpass routes';
+      recRoute = 'Elevated Expressway';
+    } else if (currentHour >= 17 && currentHour <= 21) {
+      avoidZone = 'Outer Ring Road';
+      recRoute = 'City Center Bypass';
+    }
+
+    routeContent.innerHTML = `
+      <p class="fw-medium text-info mb-1">Recommended: <span class="fw-bold text-success">${recRoute}</span></p>
+      <p class="text-muted small mb-0"><span class="text-danger">Avoid:</span> ${avoidZone} due to active alerts and predicted congestion.</p>
+    `;
   }
 }
 initSmartFeatures();
@@ -407,15 +513,18 @@ window.triggerSOS = function() {
 const i18n = {
   en: {
     sysOverview: "System Overview", sysDesc: "Monitor traffic conditions and report incidents instantly.",
-    aqiTitle: "Live AQI Index", congestTitle: "Congestion Index", weatherTitle: "Weather Alerts", trafficPred: "Traffic Prediction"
+    aqiTitle: "Live AQI Index", congestTitle: "Congestion Index", weatherTitle: "Weather Alerts", trafficPred: "Traffic Prediction",
+    signalTitle: "Smart Signals"
   },
   hi: {
     sysOverview: "प्रणाली सिंहावलोकन", sysDesc: "यातायात की स्थिति की निगरानी करें और तुरंत घटनाओं की रिपोर्ट करें।",
-    aqiTitle: "लाइव AQI सूचकांक", congestTitle: "भीड़ सूचकांक", weatherTitle: "मौसम अलर्ट", trafficPred: "यातायात भविष्यवाणी"
+    aqiTitle: "लाइव AQI सूचकांक", congestTitle: "भीड़ सूचकांक", weatherTitle: "मौसम अलर्ट", trafficPred: "यातायात भविष्यवाणी",
+    signalTitle: "स्मार्ट सिग्नल"
   },
   te: {
     sysOverview: "సిస్టమ్ అవలోకనం", sysDesc: "ట్రాఫిక్ పరిస్థితులను పర్యవేక్షించండి మరియు సంఘటనలను తక్షణమే నివేదించండి.",
-    aqiTitle: "లైవ్ AQI ఇండెక్స్", congestTitle: "రద్దీ సూచిక", weatherTitle: "వాతావరణ హెచ్చరికలు", trafficPred: "ట్రాఫిక్ అంచనా"
+    aqiTitle: "లైవ్ AQI ఇండెక్స్", congestTitle: "రద్దీ సూచిక", weatherTitle: "వాతావరణ హెచ్చరికలు", trafficPred: "ట్రాఫిక్ అంచనా",
+    signalTitle: "స్మార్ట్ సిగ్నల్స్"
   }
 };
 
@@ -426,4 +535,117 @@ window.changeLanguage = function() {
     const key = el.getAttribute('data-i18n');
     if(dict[key]) el.innerText = dict[key];
   });
+};
+
+// ------------------------------------------------
+// TRAFFIC SIGNAL OPTIMIZATION LOGIC
+// ------------------------------------------------
+let signalTimer = 45;
+let currentSignalState = 'green'; // 'green', 'yellow', 'red'
+let signalInterval = null;
+
+function updateSignalUI() {
+  const signalRed = document.getElementById('signalRed');
+  const signalYellow = document.getElementById('signalYellow');
+  const signalGreen = document.getElementById('signalGreen');
+  const timerDisplay = document.getElementById('signalTimerDisplay');
+
+  if (!signalRed || !signalYellow || !signalGreen || !timerDisplay) return;
+
+  // Reset all
+  signalRed.className = 'rounded-circle bg-danger opacity-25 mx-1';
+  signalRed.style.boxShadow = 'none';
+  signalYellow.className = 'rounded-circle bg-warning opacity-25 mx-1';
+  signalYellow.style.boxShadow = 'none';
+  signalGreen.className = 'rounded-circle bg-success opacity-25 mx-1';
+  signalGreen.style.boxShadow = 'none';
+
+  timerDisplay.innerText = `${signalTimer}s`;
+
+  if (currentSignalState === 'green') {
+    signalGreen.className = 'rounded-circle bg-success mx-1';
+    signalGreen.style.boxShadow = '0 0 10px #22c55e';
+    timerDisplay.className = 'fw-bold text-success mb-0';
+  } else if (currentSignalState === 'yellow') {
+    signalYellow.className = 'rounded-circle bg-warning mx-1';
+    signalYellow.style.boxShadow = '0 0 10px #eab308';
+    timerDisplay.className = 'fw-bold text-warning mb-0';
+  } else {
+    signalRed.className = 'rounded-circle bg-danger mx-1';
+    signalRed.style.boxShadow = '0 0 10px #ef4444';
+    timerDisplay.className = 'fw-bold text-danger mb-0';
+  }
+}
+
+function runSmartSignal() {
+  if (signalInterval) clearInterval(signalInterval);
+  
+  signalInterval = setInterval(() => {
+    signalTimer--;
+
+    if (signalTimer <= 0) {
+      // Logic for transition
+      if (currentSignalState === 'green') {
+        currentSignalState = 'yellow';
+        signalTimer = 5; // Yellow for 5s
+      } else if (currentSignalState === 'yellow') {
+        currentSignalState = 'red';
+        // Red time depends on congestion index
+        const display = document.getElementById('congestionDisplay');
+        let cIdx = display ? parseInt(display.innerText) : 30;
+        if (isNaN(cIdx)) cIdx = 30;
+        signalTimer = cIdx > 60 ? 60 : 30; // More congestion = longer red for other lanes? Or dynamically simulated. Let's say Red is 30-60s
+      } else if (currentSignalState === 'red') {
+        currentSignalState = 'green';
+        // Green time depends on congestion index (longer green if congested, or shorter to clear side traffic)
+        const display = document.getElementById('congestionDisplay');
+        let cIdx = display ? parseInt(display.innerText) : 30;
+        if (isNaN(cIdx)) cIdx = 30;
+        signalTimer = cIdx > 60 ? 90 : 45; // Longer green for high congestion
+      }
+    }
+    updateSignalUI();
+  }, 1000);
+}
+
+runSmartSignal();
+
+// ------------------------------------------------
+// VOICE RECORDING FOR ACCIDENT REPORTING
+// ------------------------------------------------
+window.startAccidentVoiceRecording = function() {
+  if (!('webkitSpeechRecognition' in window)) {
+    alert("Your browser doesn't support speech recognition.");
+    return;
+  }
+  const recognition = new webkitSpeechRecognition();
+  recognition.lang = 'en-US';
+  recognition.interimResults = false;
+  recognition.maxAlternatives = 1;
+  
+  recognition.onstart = function() {
+    document.getElementById('reportDesc').placeholder = "Listening...";
+    const btn = document.getElementById('voiceBtnDashboard');
+    if (btn) btn.classList.add('listening-animation');
+  };
+  
+  recognition.onresult = function(event) {
+    const text = event.results[0][0].transcript;
+    const currentText = document.getElementById('reportDesc').value;
+    document.getElementById('reportDesc').value = currentText ? currentText + " " + text : text;
+  };
+  
+  recognition.onend = function() {
+    const btn = document.getElementById('voiceBtnDashboard');
+    if (btn) btn.classList.remove('listening-animation');
+  };
+
+  recognition.onerror = function(event) {
+    console.error("Speech recognition error", event.error);
+    alert("Microphone error. Please try again.");
+    const btn = document.getElementById('voiceBtnDashboard');
+    if (btn) btn.classList.remove('listening-animation');
+  };
+  
+  recognition.start();
 };

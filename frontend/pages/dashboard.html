@@ -89,14 +89,65 @@
                  <p id="weatherStatus" class="mb-0 fw-medium small">Heavy Rain Exp.</p>
              </div>
           </div>
-          <div class="col-md-3">
-             <div class="card p-2 shadow-sm" style="height: 100%">
-                 <h6 class="text-muted fw-semibold text-center mb-1" data-i18n="trafficPred">Traffic Prediction</h6>
-                 <div class="chart-container" style="height: 100px;">
-                    <canvas id="trafficChart"></canvas>
+          <div class="col-md-3 mb-3 mb-md-0">
+             <div class="card p-3 shadow-sm border-success border-opacity-25" style="border-width:2px; height: 100%">
+                 <h6 class="text-muted fw-semibold text-center mb-2" data-i18n="signalTitle"><i class="bi bi-stoplights"></i> Smart Signals</h6>
+                 <div class="d-flex align-items-center justify-content-center">
+                    <div class="d-flex align-items-center bg-dark p-1 rounded-pill me-3" style="height: 40px;">
+                        <div id="signalRed" class="rounded-circle bg-danger opacity-25 mx-1" style="width:20px;height:20px;"></div>
+                        <div id="signalYellow" class="rounded-circle bg-warning opacity-25 mx-1" style="width:20px;height:20px;"></div>
+                        <div id="signalGreen" class="rounded-circle bg-success mx-1" style="width:20px;height:20px;box-shadow: 0 0 10px #22c55e;"></div>
+                    </div>
+                    <div class="text-start">
+                        <h4 id="signalTimerDisplay" class="fw-bold text-success mb-0" style="min-width: 45px;">45s</h4>
+                    </div>
                  </div>
+                 <p id="signalModeDisplay" class="mt-2 mb-0 fw-medium small text-muted text-center">Mode: <span class="text-info">Dynamic Flow</span></p>
              </div>
           </div>
+        </div>
+
+        <div class="row mb-4">
+          <div class="col-12">
+            <div class="card p-3 shadow-sm border-secondary border-opacity-25" style="height: 100%">
+                <div class="d-flex justify-content-between align-items-center mb-1">
+                   <h6 class="text-muted fw-semibold mb-0" data-i18n="trafficPred">Traffic Prediction</h6>
+                </div>
+                <div class="chart-container" style="height: 120px;">
+                   <canvas id="trafficChart"></canvas>
+                </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- SMART ACCIDENT PREDICTION & ROUTE RECOMMENDATION -->
+        <div class="row mb-4">
+          <div class="col-md-6 mb-3 mb-md-0">
+            <div class="card p-4 shadow-sm border-warning border-opacity-25 h-100">
+               <h6 class="text-muted fw-semibold mb-3"><i class="bi bi-robot"></i> AI Accident Prediction</h6>
+               <div id="aiPredictionContent">
+                  <div class="d-flex align-items-center mb-2">
+                    <span class="spinner-grow spinner-grow-sm text-warning me-2" role="status"></span>
+                    <span class="fw-bold text-warning">High Risk: 6 PM - 9 PM</span>
+                  </div>
+                  <p class="text-muted small mb-0">Based on historical data and current congestion, Outer Ring Road is flagged as a high-risk zone.</p>
+               </div>
+            </div>
+          </div>
+          <div class="col-md-6">
+            <div class="card p-4 shadow-sm border-info border-opacity-25 h-100">
+               <h6 class="text-muted fw-semibold mb-3"><i class="bi bi-signpost-split"></i> Smart Route Recommendation</h6>
+               <div id="smartRouteContent">
+                  <p class="fw-medium text-info mb-1">Recommended: <span id="recRouteName">Alternative Highway 4</span></p>
+                  <p class="text-muted small mb-0">Avoid Main Junction due to active severity alerts.</p>
+               </div>
+            </div>
+          </div>
+        </div>
+
+        <div id="emergencyBanner" class="alert alert-danger fw-bold d-none align-items-center justify-content-between flash">
+           <div><i class="bi bi-shield-fill-exclamation me-2"></i> EMERGENCY CORRIDOR ACTIVE</div>
+           <span class="badge bg-white text-danger">Priority Signals Engaged</span>
         </div>
 
         <div class="row mb-4">
@@ -158,7 +209,7 @@
             <input type="hidden" id="reportLat">
             <input type="hidden" id="reportLng">
             <div class="mb-4">
-              <label class="form-label text-muted">Accident Description</label>
+              <label class="form-label text-muted">Accident Description <button type="button" id="voiceBtnDashboard" class="btn btn-sm btn-outline-info ms-2 py-0" onclick="startAccidentVoiceRecording()"><i class="bi bi-mic"></i> Voice</button></label>
               <textarea class="form-control" id="reportDesc" rows="3" placeholder="Describe the incident (e.g. 2-car collision, blocked left lane)" required></textarea>
             </div>
             <div class="mb-4">
