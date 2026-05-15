@@ -330,17 +330,43 @@ socket.on('newAccident', (newAcc) => {
 });
 
 let citizenEmergencyRouteLayer = null;
+let dashboardEmergencyMode = false;
+let dashboardAmbulanceMarker = null;
+let dashboardAmbulanceInterval = null;
 
 socket.on('emergencyActivated', (eventData) => {
+  dashboardEmergencyMode = true;
   const banner = document.getElementById('emergencyBanner');
   if (banner) banner.classList.remove('d-none', 'd-flex');
   if (banner) banner.classList.add('d-flex');
   
   if (citizenEmergencyRouteLayer) map.removeLayer(citizenEmergencyRouteLayer);
-  if (eventData && eventData.routePath) {
-    citizenEmergencyRouteLayer = L.polyline(eventData.routePath, {
-      color: '#ef4444', weight: 8, opacity: 0.9, className: 'animated-route'
+  if (dashboardAmbulanceMarker) map.removeLayer(dashboardAmbulanceMarker);
+  if (dashboardAmbulanceInterval) clearInterval(dashboardAmbulanceInterval);
+
+  if (eventData && eventData.routeGeoJSON) {
+    citizenEmergencyRouteLayer = L.geoJSON(eventData.routeGeoJSON, {
+      style: { color: '#ef4444', weight: 8, opacity: 0.9, className: 'animated-route' }
     }).addTo(map).bindTooltip("Emergency Priority Route - KEEP CLEAR", {permanent: true});
+    map.fitBounds(citizenEmergencyRouteLayer.getBounds());
+
+    const coords = eventData.routeGeoJSON.coordinates;
+    const ambIcon = L.divIcon({
+      html: '<div style="font-size:24px; text-shadow: 0 0 10px #ef4444;">🚑</div>',
+      className: '',
+      iconSize: [30, 30]
+    });
+    dashboardAmbulanceMarker = L.marker([coords[0][1], coords[0][0]], { icon: ambIcon }).addTo(map);
+
+    let coordIdx = 0;
+    dashboardAmbulanceInterval = setInterval(() => {
+      coordIdx++;
+      if (coordIdx >= coords.length) {
+        clearInterval(dashboardAmbulanceInterval);
+        return;
+      }
+      dashboardAmbulanceMarker.setLatLng([coords[coordIdx][1], coords[coordIdx][0]]);
+    }, 150);
   }
 
   // Force signal to Green Priority
@@ -352,6 +378,7 @@ socket.on('emergencyActivated', (eventData) => {
 });
 
 socket.on('emergencyCleared', () => {
+  dashboardEmergencyMode = false;
   const banner = document.getElementById('emergencyBanner');
   if (banner) banner.classList.add('d-none');
   if (banner) banner.classList.remove('d-flex');
@@ -359,6 +386,13 @@ socket.on('emergencyCleared', () => {
   if (citizenEmergencyRouteLayer) {
     map.removeLayer(citizenEmergencyRouteLayer);
     citizenEmergencyRouteLayer = null;
+  }
+  if (dashboardAmbulanceMarker) {
+    map.removeLayer(dashboardAmbulanceMarker);
+    dashboardAmbulanceMarker = null;
+  }
+  if (dashboardAmbulanceInterval) {
+    clearInterval(dashboardAmbulanceInterval);
   }
   
   // Reset signal mode
@@ -525,6 +559,11 @@ const i18n = {
     sysOverview: "సిస్టమ్ అవలోకనం", sysDesc: "ట్రాఫిక్ పరిస్థితులను పర్యవేక్షించండి మరియు సంఘటనలను తక్షణమే నివేదించండి.",
     aqiTitle: "లైవ్ AQI ఇండెక్స్", congestTitle: "రద్దీ సూచిక", weatherTitle: "వాతావరణ హెచ్చరికలు", trafficPred: "ట్రాఫిక్ అంచనా",
     signalTitle: "స్మార్ట్ సిగ్నల్స్"
+  },
+  ne: {
+    sysOverview: "प्रणाली अवलोकन", sysDesc: "ट्राफिक अवस्थाहरूको निगरानी गर्नुहोस् र तत्काल घटनाहरू रिपोर्ट गर्नुहोस्।",
+    aqiTitle: "प्रत्यक्ष AQI सूचकांक", congestTitle: "भीड सूचकांक", weatherTitle: "मौसम अलर्टहरू", trafficPred: "ट्राफिक भविष्यवाणी",
+    signalTitle: "स्मार्ट संकेतहरू"
   }
 };
 
@@ -581,6 +620,8 @@ function runSmartSignal() {
   if (signalInterval) clearInterval(signalInterval);
   
   signalInterval = setInterval(() => {
+    if (dashboardEmergencyMode) return; // Lock the signal if emergency is active
+
     signalTimer--;
 
     if (signalTimer <= 0) {

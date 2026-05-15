@@ -8,9 +8,6 @@
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
   <link rel="stylesheet" href="../css/style.css">
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
-    .modal-header { border-bottom: 1px solid rgba(255,255,255,0.1); }
-    .modal-footer { border-top: 1px solid rgba(255,255,255,0.1); }
-  </style>
 </head>
 <body class="auth-body">
   <div class="container-fluid p-0">
@@ -51,19 +48,43 @@
       </div>
 
       <!-- Main Section -->
-      <div class="col-md-10 p-4 p-md-5 main-content">
-        <div class="d-flex justify-content-between align-items-center mb-5">
+      <div class="col-md-10 p-3 p-md-5 main-content">
+        <!-- Mobile Navbar -->
+        <nav class="navbar navbar-dark d-md-none mb-4 bg-dark bg-opacity-50 rounded px-3 border border-secondary border-opacity-25">
+          <a class="navbar-brand fw-bold gradient-text" href="#">MargDarshak</a>
+          <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#mobileMenu" aria-controls="mobileMenu" aria-expanded="false" aria-label="Toggle navigation">
+            <span class="navbar-toggler-icon"></span>
+          </button>
+          <div class="collapse navbar-collapse mt-3" id="mobileMenu">
+            <ul class="navbar-nav">
+              <li class="nav-item"><a class="nav-link active" href="#"><i class="bi bi-speedometer2"></i> Dashboard</a></li>
+              <li class="nav-item"><a class="nav-link" href="#" onclick="alert('Click on the live map to report a new accident location.')"><i class="bi bi-exclamation-octagon"></i> Quick Accident</a></li>
+              <li class="nav-item"><a class="nav-link" href="citizen-report.html"><i class="bi bi-camera"></i> Citizen Report</a></li>
+              <li class="nav-item"><a class="nav-link" href="parking.html"><i class="bi bi-p-circle"></i> Smart Parking</a></li>
+              <li class="nav-item"><a class="nav-link" href="violations.html"><i class="bi bi-shield-x"></i> E-Challan</a></li>
+              <li class="nav-item mt-2">
+                <a class="nav-link text-white bg-danger rounded text-center fw-bold shadow-sm" href="javascript:void(0)" onclick="triggerSOS()">
+                  <i class="bi bi-broadcast"></i> SOS Emergency
+                </a>
+              </li>
+              <li class="nav-item mt-2"><a class="nav-link text-danger text-center" href="javascript:void(0)" onclick="logout()"><i class="bi bi-box-arrow-right"></i> Logout</a></li>
+            </ul>
+          </div>
+        </nav>
+
+        <div class="d-flex flex-column flex-md-row justify-content-between align-items-start align-items-md-center mb-4 mb-md-5 gap-3">
           <div>
             <h2 class="fw-bold mb-0" data-i18n="sysOverview">System Overview</h2>
             <p class="text-muted mb-0" data-i18n="sysDesc">Monitor traffic conditions and report incidents instantly.</p>
           </div>
-          <div class="d-flex align-items-center">
-            <select id="langSelect" class="form-select form-select-sm premium-input py-1 me-3" style="width: auto;" onchange="changeLanguage()">
+          <div class="d-flex align-items-center w-100 w-md-auto justify-content-between justify-content-md-end">
+            <select id="langSelect" class="form-select form-select-sm premium-input py-1 me-3 flex-grow-1 flex-md-grow-0" style="max-width: 150px;" onchange="changeLanguage()">
               <option value="en">English</option>
               <option value="hi">हिंदी (Hindi)</option>
               <option value="te">తెలుగు (Telugu)</option>
+              <option value="ne">नेपाली (Nepali)</option>
             </select>
-            <div id="userGreeting" class="fw-medium text-info"></div>
+            <div id="userGreeting" class="fw-medium text-info text-truncate" style="max-width: 150px;"></div>
           </div>
         </div>
 

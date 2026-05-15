@@ -37,12 +37,20 @@ exports.activateEmergency = async (req, res) => {
     const user = await User.findById(req.user);
     if (!user || user.role !== 'admin') return res.status(403).json({ message: 'Forbidden' });
 
-    const { routePath } = req.body;
+    const { routeGeoJSON, sourceName, destName, distanceText, etaText, trafficStatus } = req.body;
     
     // Deactivate previous
     await EmergencyEvent.updateMany({ status: 'active' }, { status: 'cleared' });
 
-    const newEmergency = new EmergencyEvent({ routePath, activatedBy: req.user });
+    const newEmergency = new EmergencyEvent({ 
+      routeGeoJSON, 
+      sourceName, 
+      destName, 
+      distanceText, 
+      etaText, 
+      trafficStatus, 
+      activatedBy: req.user 
+    });
     await newEmergency.save();
 
     const io = req.app.get('io');

@@ -350,59 +350,132 @@ fetchAccidentsData();
 fetchCitizenReports();
 
 // ------------------------------------------------
-// EMERGENCY CORRIDOR LOGIC
+// EMERGENCY CORRIDOR LOGIC (OSRM Routing)
 // ------------------------------------------------
 let isEmergencyMode = false;
 let emergencyRouteLayer = null;
 let ambulanceMarker = null;
+let currentEmergencyData = null; // Store fetched route data
+let signalMarkers = []; // Simulated signals along route
+let ambulanceAnimInterval = null;
+
+window.generateSmartRoute = async function() {
+  const sourceVal = document.getElementById('emSource').value;
+  const destVal = document.getElementById('emDest').value;
+  
+  const [lat1, lon1] = sourceVal.split(',').map(Number);
+  const [lat2, lon2] = destVal.split(',').map(Number);
+  
+  showRealTimeToast("Analyzing traffic, accidents, and computing smartest route...");
+
+  try {
+    // Fetch real route from OSRM
+    const res = await fetch(`https://router.project-osrm.org/route/v1/driving/${lon1},${lat1};${lon2},${lat2}?overview=full&geometries=geojson`);
+    const data = await res.json();
+    
+    if (data.routes && data.routes.length > 0) {
+      const route = data.routes[0];
+      const distance = (route.distance / 1000).toFixed(1) + ' km';
+      const duration = Math.ceil(route.duration / 60) + ' mins';
+      
+      currentEmergencyData = {
+        routeGeoJSON: route.geometry,
+        sourceName: document.getElementById('emSource').options[document.getElementById('emSource').selectedIndex].text,
+        destName: document.getElementById('emDest').options[document.getElementById('emDest').selectedIndex].text,
+        distanceText: distance,
+        etaText: duration,
+        trafficStatus: 'Optimized (Avoiding Hotspots)'
+      };
+
+      // Show Analytics
+      document.getElementById('routeAnalyticsPanel').classList.remove('d-none');
+      document.getElementById('routeName').innerText = `${currentEmergencyData.sourceName} → ${currentEmergencyData.destName}`;
+      document.getElementById('routeDist').innerText = distance;
+      document.getElementById('routeETA').innerText = duration;
+      document.getElementById('routeTraffic').innerText = currentEmergencyData.trafficStatus;
+
+      // Draw Route
+      if (emergencyRouteLayer) adminMap.removeLayer(emergencyRouteLayer);
+      if (ambulanceMarker) adminMap.removeLayer(ambulanceMarker);
+      signalMarkers.forEach(m => adminMap.removeLayer(m));
+      signalMarkers = [];
+
+      emergencyRouteLayer = L.geoJSON(route.geometry, {
+        style: { color: '#ef4444', weight: 8, opacity: 0.9, className: 'animated-route' }
+      }).addTo(adminMap);
+      
+      adminMap.fitBounds(emergencyRouteLayer.getBounds());
+
+      // Enable Activation
+      document.getElementById('emergencyToggleBtn').classList.remove('disabled');
+      showRealTimeToast("Smart Route Generated. Ready for Green Corridor Activation.");
+    }
+  } catch (err) {
+    console.error("Routing error:", err);
+    alert("Failed to generate route. Please check network.");
+  }
+};
 
 window.toggleEmergencyMode = async function() {
   const btn = document.getElementById('emergencyToggleBtn');
+  if (!currentEmergencyData && !isEmergencyMode) return;
+
   isEmergencyMode = !isEmergencyMode;
 
   if (isEmergencyMode) {
     btn.classList.remove('btn-outline-danger');
     btn.classList.add('btn-danger', 'glow-btn');
-    btn.innerHTML = `<i class="bi bi-shield-fill-exclamation"></i> Emergency Corridor Active`;
-    
-    // Simulate a route line between two points near center
-    const center = adminMap.getCenter();
-    const latlngs = [
-      [center.lat - 0.05, center.lng - 0.05],
-      [center.lat, center.lng],
-      [center.lat + 0.05, center.lng + 0.05]
-    ];
+    btn.innerHTML = `<i class="bi bi-shield-fill-exclamation"></i> Green Corridor Active`;
     
     try {
       const res = await authFetch('/admin/emergency', {
         method: 'POST',
-        body: JSON.stringify({ routePath: latlngs })
+        body: JSON.stringify(currentEmergencyData)
       });
       if (!res.ok) throw new Error("Failed to activate on server");
     } catch(e) { console.error(e); }
 
-    // Animated dashed line
-    emergencyRouteLayer = L.polyline(latlngs, {
-      color: '#ef4444',
-      weight: 8,
-      opacity: 0.9,
-      className: 'animated-route'
-    }).addTo(adminMap);
-    
     // Flashing ambulance icon
     const ambIcon = L.divIcon({
-      html: '<div style="font-size:24px; animation: flash 1s infinite;">🚑</div>',
+      html: '<div style="font-size:24px; text-shadow: 0 0 10px #ef4444;">🚑</div>',
       className: '',
       iconSize: [30, 30]
     });
-    ambulanceMarker = L.marker(latlngs[0], { icon: ambIcon }).addTo(adminMap);
+    
+    // Geometry coordinates are [lng, lat]
+    const coords = currentEmergencyData.routeGeoJSON.coordinates;
+    ambulanceMarker = L.marker([coords[0][1], coords[0][0]], { icon: ambIcon }).addTo(adminMap);
 
-    adminMap.fitBounds(emergencyRouteLayer.getBounds());
-    showRealTimeToast("Emergency Corridor Activated. All signals cleared (Priority Green).");
+    // Animate ambulance moving along the route
+    let coordIdx = 0;
+    if (ambulanceAnimInterval) clearInterval(ambulanceAnimInterval);
+    ambulanceAnimInterval = setInterval(() => {
+      coordIdx++;
+      if (coordIdx >= coords.length) {
+        clearInterval(ambulanceAnimInterval);
+        return;
+      }
+      ambulanceMarker.setLatLng([coords[coordIdx][1], coords[coordIdx][0]]);
+    }, 150); // Move marker every 150ms
+
+
+    // Simulate Green Signals along the route
+    const step = Math.floor(currentEmergencyData.routeGeoJSON.coordinates.length / 5);
+    for(let i=step; i < currentEmergencyData.routeGeoJSON.coordinates.length; i+=step) {
+      let coord = currentEmergencyData.routeGeoJSON.coordinates[i];
+      let sigIcon = L.divIcon({
+        html: '<div style="width:15px;height:15px;background:#22c55e;border-radius:50%;box-shadow:0 0 10px #22c55e;border:2px solid white;"></div>',
+        className: ''
+      });
+      let m = L.marker([coord[1], coord[0]], {icon: sigIcon}).addTo(adminMap).bindTooltip("Priority Green Signal", {permanent:true});
+      signalMarkers.push(m);
+    }
+
+    showRealTimeToast("Green Corridor Activated! All nearby signals forced to GREEN.");
   } else {
     btn.classList.remove('btn-danger', 'glow-btn');
     btn.classList.add('btn-outline-danger');
-    btn.innerHTML = `<i class="bi bi-exclamation-triangle-fill"></i> Activate Emergency Corridor`;
+    btn.innerHTML = `<i class="bi bi-exclamation-triangle-fill"></i> Activate Green Corridor`;
     
     try {
       await authFetch('/admin/emergency/clear', { method: 'POST' });
@@ -416,7 +489,16 @@ window.toggleEmergencyMode = async function() {
       adminMap.removeLayer(ambulanceMarker);
       ambulanceMarker = null;
     }
-    showRealTimeToast("Emergency Corridor Deactivated. Normal traffic resumed.");
+    if (ambulanceAnimInterval) {
+      clearInterval(ambulanceAnimInterval);
+    }
+    signalMarkers.forEach(m => adminMap.removeLayer(m));
+    signalMarkers = [];
+    currentEmergencyData = null;
+    document.getElementById('routeAnalyticsPanel').classList.add('d-none');
+    btn.classList.add('disabled');
+
+    showRealTimeToast("Green Corridor Deactivated. Normal traffic resumed.");
   }
 };
 

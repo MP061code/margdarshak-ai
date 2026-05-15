@@ -1,10 +1,15 @@
 const mongoose = require('mongoose');
 
 const emergencyEventSchema = new mongoose.Schema({
-  routePath: {
-    type: [[Number]], // Array of [lat, lng] arrays
+  routeGeoJSON: {
+    type: mongoose.Schema.Types.Mixed, // Storing full GeoJSON geometry from OSRM
     required: true
   },
+  sourceName: String,
+  destName: String,
+  distanceText: String,
+  etaText: String,
+  trafficStatus: String,
   status: {
     type: String,
     enum: ['active', 'cleared'],
